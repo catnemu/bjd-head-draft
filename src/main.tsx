@@ -171,22 +171,22 @@ function mmToSidePx(mm: number) {
 
 function mapFrontPoint(point: Point, project: HeadProject): Point {
   const centerX = 110;
-  const topY = 28;
-  const heightScale = project.headHeightMm / BASE_HEAD_HEIGHT;
-  const widthScale = project.front.headWidthMm / BASE_HEAD_WIDTH;
-  let x = centerX + (point.x - centerX) * widthScale;
-  let y = topY + (point.y - topY) * heightScale;
+  let x = point.x;
+  let y = point.y;
   const side = signedFromCenter(x, centerX);
   const yOriginal = point.y;
+  const headMask = gaussian(point.x, centerX, 78) * gaussian(point.y, 118, 92);
+  const widthDelta = project.front.headWidthMm - BASE_HEAD_WIDTH;
 
-  x += side * mmToFrontPx(project.front.templeWidth) * gaussian(yOriginal, 126, 18);
-  x += side * mmToFrontPx(project.front.cheekboneWidth) * gaussian(yOriginal, 143, 16);
-  x += side * mmToFrontPx(project.front.cheekWidth) * gaussian(yOriginal, 166, 18);
-  x += side * mmToFrontPx(project.front.jawWidth) * gaussian(yOriginal, 194, 17);
-  y += mmToFrontPx(project.front.jawLength) * gaussian(yOriginal, 214, 22);
+  x += side * mmToFrontPx(widthDelta) * 0.5 * headMask;
+  x += side * mmToFrontPx(project.front.templeWidth) * gaussian(yOriginal, 120, 15) * gaussian(point.x, centerX, 82);
+  x += side * mmToFrontPx(project.front.cheekboneWidth) * gaussian(yOriginal, 139, 14) * gaussian(point.x, centerX, 76);
+  x += side * mmToFrontPx(project.front.cheekWidth) * gaussian(yOriginal, 158, 17) * gaussian(point.x, centerX, 72);
+  x += side * mmToFrontPx(project.front.jawWidth) * gaussian(yOriginal, 179, 17) * gaussian(point.x, centerX, 62);
+  y += mmToFrontPx(project.front.jawLength) * gaussian(yOriginal, 191, 20) * gaussian(point.x, centerX, 52);
 
   const eye = project.eye;
-  const eyeCenterY = 132;
+  const eyeCenterY = 126;
   const eyeYShift = mmToFrontPx(eye.eyeHeight) * gaussian(point.y, eyeCenterY, 18);
   y += eyeYShift;
 
@@ -342,21 +342,21 @@ function AnchorOverlay({ points }: { points: Point[] }) {
 function FrontView({ project }: { project: HeadProject }) {
   const mapPoint = (point: Point) => mapFrontPoint(point, project);
   const anchors = [
-    { x: 110, y: 28 },
-    { x: 52, y: 126 },
-    { x: 41, y: 143 },
-    { x: 52, y: 166 },
-    { x: 70, y: 194 },
-    { x: 110, y: 222 },
-    { x: 81, y: 132 },
-    { x: 139, y: 132 },
+    { x: 110, y: 34 },
+    { x: 53, y: 120 },
+    { x: 43, y: 139 },
+    { x: 53, y: 158 },
+    { x: 71, y: 179 },
+    { x: 110, y: 198 },
+    { x: 81, y: 126 },
+    { x: 139, y: 126 },
   ].map(mapPoint);
 
   return (
     <div className="warp-stage" role="img" aria-label="正面写真メッシュ変形">
-      <WarpedPhoto href={FRONT_PHOTO} viewBox={{ width: 220, height: 232 }} cols={28} rows={36} mapPoint={mapPoint} />
+      <WarpedPhoto href={FRONT_PHOTO} viewBox={{ width: 220, height: 220 }} cols={28} rows={36} mapPoint={mapPoint} />
       {project.showAnchors && (
-        <svg className="anchor-svg" viewBox="0 0 220 232" aria-hidden="true">
+        <svg className="anchor-svg" viewBox="0 0 220 220" aria-hidden="true">
           <AnchorOverlay points={anchors} />
         </svg>
       )}
