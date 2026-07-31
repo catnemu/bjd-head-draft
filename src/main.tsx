@@ -239,55 +239,82 @@ function n(value: number) {
 
 function frontOutline(project: HeadProject, inset = 0) {
   const { dimensions: d, skull: s } = project;
-  const h = d.totalHeight - inset * 1.2;
   const centerX = 70;
-  const topY = 12 + inset * 0.6;
-  const templeY = topY + h * 0.31;
-  const cheekY = topY + h * 0.58;
-  const jawY = topY + h - s.jawLength;
+  const topY = 9 + inset * 0.35;
+  const h = d.totalHeight - inset * 0.8;
+  const templeY = topY + h * 0.32;
+  const cheekboneY = topY + h * 0.52;
+  const cheekHollowY = topY + h * 0.66;
+  const jawY = topY + h - s.jawLength * 0.72;
+  const chinSideY = topY + h - 4;
   const chinY = topY + h;
-  const maxHalf = Math.max(4, d.headWidth / 2 - inset);
-  const templeHalf = Math.max(4, s.templeWidth / 2 - inset * 0.7);
-  const cheekHalf = Math.max(4, (s.cheekboneWidth + s.cheekVolume * 0.35) / 2 - inset);
-  const jawHalf = Math.max(3, s.jawWidth / 2 - inset * 0.75);
-  const chinHalf = Math.max(2, s.chinWidth / 2 - inset * 0.5);
-  const jawPull = s.jawAngle * 0.35;
+  const cranialHalf = Math.max(8, d.headWidth * 0.46 - inset * 0.55);
+  const sideHalf = Math.max(8, d.headWidth * 0.5 - inset * 0.65);
+  const templeHalf = Math.max(6, s.templeWidth * 0.5 - inset * 0.55);
+  const cheekboneHalf = Math.max(8, (s.cheekboneWidth + s.cheekVolume * 0.5) * 0.5 - inset * 0.65);
+  const cheekHollowHalf = Math.max(6, cheekboneHalf - 5 - s.cheekVolume * 0.18);
+  const jawHalf = Math.max(5, s.jawWidth * 0.5 - inset * 0.55);
+  const chinHalf = Math.max(3, s.chinWidth * 0.5 - inset * 0.35);
+  const jawAngleShift = s.jawAngle * 0.22;
 
   return [
     `M ${n(centerX)} ${n(topY)}`,
-    `C ${n(centerX - maxHalf * 0.9)} ${n(topY + 2)}, ${n(centerX - maxHalf)} ${n(templeY - 7)}, ${n(centerX - templeHalf)} ${n(templeY)}`,
-    `C ${n(centerX - cheekHalf)} ${n(cheekY - 6)}, ${n(centerX - cheekHalf + jawPull)} ${n(cheekY + 4)}, ${n(centerX - jawHalf)} ${n(jawY)}`,
-    `C ${n(centerX - chinHalf)} ${n(chinY - 4)}, ${n(centerX - chinHalf)} ${n(chinY)}, ${n(centerX)} ${n(chinY)}`,
-    `C ${n(centerX + chinHalf)} ${n(chinY)}, ${n(centerX + chinHalf)} ${n(chinY - 4)}, ${n(centerX + jawHalf)} ${n(jawY)}`,
-    `C ${n(centerX + cheekHalf - jawPull)} ${n(cheekY + 4)}, ${n(centerX + cheekHalf)} ${n(cheekY - 6)}, ${n(centerX + templeHalf)} ${n(templeY)}`,
-    `C ${n(centerX + maxHalf)} ${n(templeY - 7)}, ${n(centerX + maxHalf * 0.9)} ${n(topY + 2)}, ${n(centerX)} ${n(topY)}`,
+    `C ${n(centerX - cranialHalf * 0.72)} ${n(topY + 1)}, ${n(centerX - sideHalf)} ${n(topY + h * 0.12)}, ${n(centerX - sideHalf)} ${n(topY + h * 0.22)}`,
+    `C ${n(centerX - sideHalf)} ${n(topY + h * 0.28)}, ${n(centerX - templeHalf - 2)} ${n(templeY - 3)}, ${n(centerX - templeHalf)} ${n(templeY)}`,
+    `C ${n(centerX - templeHalf + 1)} ${n(templeY + 5)}, ${n(centerX - cheekboneHalf)} ${n(cheekboneY - 5)}, ${n(centerX - cheekboneHalf)} ${n(cheekboneY)}`,
+    `C ${n(centerX - cheekboneHalf + 1)} ${n(cheekboneY + 5)}, ${n(centerX - cheekHollowHalf)} ${n(cheekHollowY - 3)}, ${n(centerX - cheekHollowHalf)} ${n(cheekHollowY)}`,
+    `C ${n(centerX - cheekHollowHalf)} ${n(cheekHollowY + 5)}, ${n(centerX - jawHalf - jawAngleShift)} ${n(jawY - 3)}, ${n(centerX - jawHalf)} ${n(jawY)}`,
+    `C ${n(centerX - chinHalf - 1)} ${n(chinSideY)}, ${n(centerX - chinHalf)} ${n(chinY - 1)}, ${n(centerX)} ${n(chinY)}`,
+    `C ${n(centerX + chinHalf)} ${n(chinY - 1)}, ${n(centerX + chinHalf + 1)} ${n(chinSideY)}, ${n(centerX + jawHalf)} ${n(jawY)}`,
+    `C ${n(centerX + jawHalf + jawAngleShift)} ${n(jawY - 3)}, ${n(centerX + cheekHollowHalf)} ${n(cheekHollowY + 5)}, ${n(centerX + cheekHollowHalf)} ${n(cheekHollowY)}`,
+    `C ${n(centerX + cheekHollowHalf)} ${n(cheekHollowY - 3)}, ${n(centerX + cheekboneHalf - 1)} ${n(cheekboneY + 5)}, ${n(centerX + cheekboneHalf)} ${n(cheekboneY)}`,
+    `C ${n(centerX + cheekboneHalf)} ${n(cheekboneY - 5)}, ${n(centerX + templeHalf - 1)} ${n(templeY + 5)}, ${n(centerX + templeHalf)} ${n(templeY)}`,
+    `C ${n(centerX + templeHalf + 2)} ${n(templeY - 3)}, ${n(centerX + sideHalf)} ${n(topY + h * 0.28)}, ${n(centerX + sideHalf)} ${n(topY + h * 0.22)}`,
+    `C ${n(centerX + sideHalf)} ${n(topY + h * 0.12)}, ${n(centerX + cranialHalf * 0.72)} ${n(topY + 1)}, ${n(centerX)} ${n(topY)}`,
     'Z',
   ].join(' ');
 }
 
 function sideOutline(project: HeadProject, inset = 0) {
   const { dimensions: d, skull: s, face } = project;
-  const h = d.totalHeight - inset * 1.2;
-  const rearX = 170 + inset * 0.4;
-  const topY = 12 + inset * 0.6;
-  const depth = Math.max(12, d.headDepth - inset * 1.5);
-  const back = rearX + (100 - s.backRoundness) * 0.08;
-  const facePlane = rearX + depth * 0.72;
-  const foreheadX = facePlane + s.foreheadProjection - s.foreheadSlope * 0.35;
-  const noseY = topY + face.nose.length + face.eye.height + 6;
-  const mouthY = topY + h * 0.72;
-  const chinY = topY + h;
-  const noseX = facePlane + face.nose.height + face.nose.tipHeight - inset * 0.5;
-  const lipX = facePlane + face.mouth.projection - inset * 0.4;
-  const chinX = facePlane - 4 + s.chinProjection - inset * 0.5;
+  const topY = 9 + inset * 0.35;
+  const h = d.totalHeight - inset * 0.8;
+  const depth = Math.max(28, d.headDepth - inset * 0.9);
+  const rearBase = 178 + inset * 0.45;
+  const faceBase = rearBase + depth * 0.72 - inset * 0.25;
+  const crown = { x: rearBase + depth * 0.42, y: topY };
+  const rearCrown = { x: rearBase + depth * 0.08, y: topY + h * 0.1 };
+  const backMax = { x: rearBase - s.backRoundness * 0.18 + inset * 0.7, y: topY + h * 0.43 };
+  const forehead = { x: faceBase + s.foreheadProjection * 0.45 - s.foreheadSlope * 0.3, y: topY + h * 0.18 };
+  const glabella = { x: faceBase + s.foreheadProjection * 0.25, y: topY + face.eye.height - 2 };
+  const noseRoot = { x: faceBase + face.nose.bridge * 0.35, y: topY + face.eye.height + 2 };
+  const noseTip = { x: faceBase + face.nose.height + face.nose.tipHeight * 0.7 - inset * 0.45, y: topY + face.eye.height + face.nose.length };
+  const underNose = { x: faceBase + face.nose.wingWidth * 0.25 - inset * 0.35, y: noseTip.y + 5 };
+  const upperLip = { x: faceBase + face.mouth.projection + face.mouth.upperLip * 0.45 - inset * 0.35, y: topY + h * 0.66 };
+  const lowerLip = { x: faceBase + face.mouth.projection + face.mouth.lowerLip * 0.38 - inset * 0.35, y: topY + h * 0.71 };
+  const mouthSetback = { x: faceBase + face.mouth.projection * 0.45 - inset * 0.35, y: topY + h * 0.76 };
+  const chinTip = { x: faceBase - 2 + s.chinProjection - inset * 0.45, y: topY + h - s.jawLength * 0.18 };
+  const underChin = { x: faceBase - 8 - inset * 0.2, y: topY + h };
+  const neckFront = { x: rearBase + depth * 0.48 + d.neckWidth * 0.32 + d.neckOffsetY, y: topY + h + 12 };
+  const neckBack = { x: rearBase + depth * 0.48 - d.neckWidth * 0.46 + d.neckOffsetY, y: topY + h + 12 };
 
   return [
-    `M ${n(rearX + depth * 0.45)} ${n(topY)}`,
-    `C ${n(back - 8)} ${n(topY + 8)}, ${n(back - 9)} ${n(topY + h * 0.45)}, ${n(back)} ${n(topY + h * 0.65)}`,
-    `C ${n(back + 7)} ${n(topY + h * 0.88)}, ${n(rearX + depth * 0.45)} ${n(chinY)}, ${n(chinX)} ${n(chinY)}`,
-    `C ${n(lipX - 3)} ${n(mouthY + 12)}, ${n(lipX)} ${n(mouthY + 4)}, ${n(lipX)} ${n(mouthY)}`,
-    `C ${n(lipX - 2)} ${n(mouthY - 7)}, ${n(noseX - face.nose.tipRoundness * 0.3)} ${n(noseY + 5)}, ${n(noseX)} ${n(noseY)}`,
-    `C ${n(foreheadX + 2)} ${n(topY + h * 0.36)}, ${n(foreheadX)} ${n(topY + h * 0.1)}, ${n(rearX + depth * 0.45)} ${n(topY)}`,
+    `M ${n(crown.x)} ${n(crown.y)}`,
+    `C ${n(crown.x + 14)} ${n(crown.y + 2)}, ${n(forehead.x + 2)} ${n(forehead.y - 8)}, ${n(forehead.x)} ${n(forehead.y)}`,
+    `C ${n(forehead.x - 1)} ${n(forehead.y + 6)}, ${n(glabella.x + 2)} ${n(glabella.y - 3)}, ${n(glabella.x)} ${n(glabella.y)}`,
+    `C ${n(glabella.x + 2)} ${n(glabella.y + 2)}, ${n(noseRoot.x)} ${n(noseRoot.y - 2)}, ${n(noseRoot.x)} ${n(noseRoot.y)}`,
+    `C ${n(noseRoot.x + 5)} ${n(noseRoot.y + 4)}, ${n(noseTip.x - face.nose.tipRoundness * 0.2)} ${n(noseTip.y - 5)}, ${n(noseTip.x)} ${n(noseTip.y)}`,
+    `C ${n(noseTip.x - 1)} ${n(noseTip.y + 4)}, ${n(underNose.x + 2)} ${n(underNose.y - 1)}, ${n(underNose.x)} ${n(underNose.y)}`,
+    `C ${n(upperLip.x - 1)} ${n(upperLip.y - 3)}, ${n(upperLip.x + 1)} ${n(upperLip.y - 1)}, ${n(upperLip.x)} ${n(upperLip.y)}`,
+    `C ${n(upperLip.x + 1)} ${n(upperLip.y + 2)}, ${n(lowerLip.x + 1)} ${n(lowerLip.y - 2)}, ${n(lowerLip.x)} ${n(lowerLip.y)}`,
+    `C ${n(lowerLip.x - 1)} ${n(lowerLip.y + 3)}, ${n(mouthSetback.x + 1)} ${n(mouthSetback.y - 1)}, ${n(mouthSetback.x)} ${n(mouthSetback.y)}`,
+    `C ${n(chinTip.x + 2)} ${n(chinTip.y - 2)}, ${n(chinTip.x + 2)} ${n(chinTip.y - 1)}, ${n(chinTip.x)} ${n(chinTip.y)}`,
+    `C ${n(chinTip.x - 1)} ${n(chinTip.y + 5)}, ${n(underChin.x + 3)} ${n(underChin.y - 1)}, ${n(underChin.x)} ${n(underChin.y)}`,
+    `L ${n(neckFront.x)} ${n(neckFront.y)}`,
+    `L ${n(neckBack.x)} ${n(neckBack.y)}`,
+    `C ${n(neckBack.x - 7)} ${n(topY + h * 0.82)}, ${n(backMax.x)} ${n(backMax.y + 12)}, ${n(backMax.x)} ${n(backMax.y)}`,
+    `C ${n(backMax.x)} ${n(backMax.y - 16)}, ${n(rearCrown.x - 2)} ${n(rearCrown.y + 3)}, ${n(rearCrown.x)} ${n(rearCrown.y)}`,
+    `C ${n(rearCrown.x + 10)} ${n(topY + 1)}, ${n(crown.x - 6)} ${n(crown.y)}, ${n(crown.x)} ${n(crown.y)}`,
     'Z',
   ].join(' ');
 }
@@ -295,17 +322,57 @@ function sideOutline(project: HeadProject, inset = 0) {
 function topOutline(project: HeadProject, inset = 0) {
   const { dimensions: d, skull: s } = project;
   const cx = 70;
-  const cy = 43;
-  const rx = Math.max(8, d.headWidth / 2 - inset);
-  const ry = Math.max(8, d.headDepth / 2 - inset);
-  const cheek = (s.cheekboneWidth - d.headWidth) * 0.12 + s.cheekVolume * 0.12;
-  const temple = (s.templeWidth - d.headWidth) * 0.08;
+  const frontY = 14 + inset * 0.35;
+  const backY = frontY + Math.max(26, d.headDepth - inset * 0.85);
+  const templeY = frontY + (backY - frontY) * 0.34;
+  const cheekY = frontY + (backY - frontY) * 0.55;
+  const rearY = frontY + (backY - frontY) * 0.82;
+  const frontHalf = Math.max(7, (d.headWidth * 0.58 + s.foreheadProjection * 0.35) / 2 - inset * 0.45);
+  const templeHalf = Math.max(6, s.templeWidth / 2 - inset * 0.55);
+  const cheekHalf = Math.max(8, (s.cheekboneWidth + s.cheekVolume * 0.35) / 2 - inset * 0.65);
+  const rearHalf = Math.max(8, (d.headWidth * 0.74 + s.backRoundness * 0.08) / 2 - inset * 0.55);
   return [
-    `M ${n(cx)} ${n(cy - ry)}`,
-    `C ${n(cx - rx + temple)} ${n(cy - ry * 0.78)}, ${n(cx - rx - cheek)} ${n(cy - ry * 0.15)}, ${n(cx - rx * 0.86)} ${n(cy + ry * 0.33)}`,
-    `C ${n(cx - rx * 0.55)} ${n(cy + ry * 0.95)}, ${n(cx - rx * 0.25)} ${n(cy + ry)}, ${n(cx)} ${n(cy + ry)}`,
-    `C ${n(cx + rx * 0.25)} ${n(cy + ry)}, ${n(cx + rx * 0.55)} ${n(cy + ry * 0.95)}, ${n(cx + rx * 0.86)} ${n(cy + ry * 0.33)}`,
-    `C ${n(cx + rx + cheek)} ${n(cy - ry * 0.15)}, ${n(cx + rx - temple)} ${n(cy - ry * 0.78)}, ${n(cx)} ${n(cy - ry)}`,
+    `M ${n(cx)} ${n(frontY)}`,
+    `C ${n(cx - frontHalf)} ${n(frontY + 2)}, ${n(cx - templeHalf)} ${n(templeY - 4)}, ${n(cx - templeHalf)} ${n(templeY)}`,
+    `C ${n(cx - templeHalf)} ${n(templeY + 5)}, ${n(cx - cheekHalf)} ${n(cheekY - 4)}, ${n(cx - cheekHalf)} ${n(cheekY)}`,
+    `C ${n(cx - cheekHalf)} ${n(cheekY + 8)}, ${n(cx - rearHalf)} ${n(rearY - 3)}, ${n(cx - rearHalf)} ${n(rearY)}`,
+    `C ${n(cx - rearHalf)} ${n(backY - 4)}, ${n(cx - rearHalf * 0.45)} ${n(backY)}, ${n(cx)} ${n(backY)}`,
+    `C ${n(cx + rearHalf * 0.45)} ${n(backY)}, ${n(cx + rearHalf)} ${n(backY - 4)}, ${n(cx + rearHalf)} ${n(rearY)}`,
+    `C ${n(cx + rearHalf)} ${n(rearY - 3)}, ${n(cx + cheekHalf)} ${n(cheekY + 8)}, ${n(cx + cheekHalf)} ${n(cheekY)}`,
+    `C ${n(cx + cheekHalf)} ${n(cheekY - 4)}, ${n(cx + templeHalf)} ${n(templeY + 5)}, ${n(cx + templeHalf)} ${n(templeY)}`,
+    `C ${n(cx + templeHalf)} ${n(templeY - 4)}, ${n(cx + frontHalf)} ${n(frontY + 2)}, ${n(cx)} ${n(frontY)}`,
+    'Z',
+  ].join(' ');
+}
+
+function angleOutline(project: HeadProject, inset = 0) {
+  const { dimensions: d, skull: s, face } = project;
+  const cx = 72;
+  const topY = 9 + inset * 0.35;
+  const h = d.totalHeight - inset * 0.8;
+  const depth = Math.max(20, d.headDepth - inset * 0.85);
+  const depthShift = depth * 0.34;
+  const templeY = topY + h * 0.32;
+  const cheekY = topY + h * 0.52;
+  const jawY = topY + h - s.jawLength * 0.7;
+  const chinY = topY + h;
+  const leftRear = cx - d.headWidth * 0.34 - depthShift * 0.55;
+  const rightFace = cx + d.headWidth * 0.3 + depthShift * 0.45;
+  const cheekX = rightFace + s.cheekVolume * 0.25;
+  const noseY = topY + face.eye.height + face.nose.length;
+  const noseX = rightFace + face.nose.height + face.nose.tipHeight * 0.55;
+  const lipX = rightFace + face.mouth.projection;
+  const chinX = rightFace - 6 + s.chinProjection;
+  const backX = leftRear - s.backRoundness * 0.06;
+
+  return [
+    `M ${n(cx)} ${n(topY)}`,
+    `C ${n(backX)} ${n(topY + 2)}, ${n(leftRear)} ${n(templeY - 8)}, ${n(leftRear + 4)} ${n(templeY)}`,
+    `C ${n(leftRear + 1)} ${n(cheekY - 3)}, ${n(cx - d.headWidth * 0.18)} ${n(jawY)}, ${n(chinX)} ${n(chinY)}`,
+    `C ${n(chinX + 4)} ${n(chinY - 7)}, ${n(lipX - 4)} ${n(topY + h * 0.73)}, ${n(lipX)} ${n(topY + h * 0.7)}`,
+    `C ${n(lipX + 2)} ${n(topY + h * 0.66)}, ${n(rightFace)} ${n(noseY + 8)}, ${n(noseX)} ${n(noseY)}`,
+    `C ${n(rightFace + 2)} ${n(noseY - 8)}, ${n(rightFace + s.foreheadProjection * 0.35)} ${n(topY + h * 0.28)}, ${n(rightFace - 2)} ${n(topY + h * 0.18)}`,
+    `C ${n(cheekX)} ${n(cheekY - 10)}, ${n(cx + d.headWidth * 0.18)} ${n(topY + 2)}, ${n(cx)} ${n(topY)}`,
     'Z',
   ].join(' ');
 }
@@ -355,8 +422,8 @@ function FrontView({ project, compact = false }: { project: HeadProject; compact
   const rightEye = cx + face.eye.gap / 2 + face.eye.width / 2;
   const coreInset = display.mode === 'finished' ? core.coreInset + core.shellThickness : core.coreInset;
   return (
-    <svg viewBox="0 0 140 96" className="view-svg" role="img" aria-label="正面ビュー">
-      <rect className="view-bg" width="140" height="96" />
+    <svg viewBox="34 4 72 92" className="view-svg" role="img" aria-label="正面ビュー">
+      <rect className="view-bg" x="34" y="4" width="72" height="92" />
       <GuideLines project={project} variant="front" />
       {display.mode !== 'core' && <path className={`shape finished ${display.translucent ? 'soft' : ''}`} d={frontOutline(project, 0)} />}
       {display.mode !== 'finished' && <path className="shape core" d={frontOutline(project, coreInset)} />}
@@ -366,7 +433,7 @@ function FrontView({ project, compact = false }: { project: HeadProject; compact
       <path className="feature" d={`M ${cx - face.mouth.width / 2} ${topY + d.totalHeight * 0.72} Q ${cx} ${topY + d.totalHeight * 0.72 + face.mouth.corner * 0.15} ${cx + face.mouth.width / 2} ${topY + d.totalHeight * 0.72}`} />
       <line className="neck" x1={cx - d.neckWidth / 2 + d.neckOffsetX} y1={topY + d.totalHeight} x2={cx - d.neckWidth / 2 + d.neckOffsetX} y2={94} />
       <line className="neck" x1={cx + d.neckWidth / 2 + d.neckOffsetX} y1={topY + d.totalHeight} x2={cx + d.neckWidth / 2 + d.neckOffsetX} y2={94} />
-      {!compact && <text className="view-title" x="8" y="10">正面</text>}
+      {!compact && <text className="view-title" x="38" y="11">正面</text>}
     </svg>
   );
 }
@@ -378,14 +445,14 @@ function SideView({ project, compact = false }: { project: HeadProject; compact?
   const earY = topY + face.ear.height;
   const earX = 171 + d.headDepth * 0.35 + face.ear.position;
   return (
-    <svg viewBox="140 0 120 96" className="view-svg" role="img" aria-label="側面ビュー">
-      <rect className="view-bg" x="140" width="120" height="96" />
+    <svg viewBox="144 4 116 104" className="view-svg" role="img" aria-label="側面ビュー">
+      <rect className="view-bg" x="144" y="4" width="116" height="104" />
       <GuideLines project={project} variant="side" />
       {display.mode !== 'core' && <path className={`shape finished ${display.translucent ? 'soft' : ''}`} d={sideOutline(project, 0)} />}
       {display.mode !== 'finished' && <path className="shape core" d={sideOutline(project, coreInset)} />}
       <ellipse className="feature" cx={earX} cy={earY} rx={face.ear.size * 0.28} ry={face.ear.size * 0.52} transform={`rotate(${face.ear.tilt} ${earX} ${earY})`} />
       <line className="neck" x1={185 + d.neckOffsetY} y1={topY + d.totalHeight - 4} x2={185 + d.neckOffsetY} y2={94} />
-      {!compact && <text className="view-title" x="148" y="10">側面</text>}
+      {!compact && <text className="view-title" x="148" y="11">側面</text>}
     </svg>
   );
 }
@@ -394,28 +461,27 @@ function TopView({ project, compact = false }: { project: HeadProject; compact?:
   const { core, display } = project;
   const coreInset = display.mode === 'finished' ? core.coreInset + core.shellThickness : core.coreInset;
   return (
-    <svg viewBox="0 0 140 96" className="view-svg" role="img" aria-label="上面ビュー">
-      <rect className="view-bg" width="140" height="96" />
-      <line className="guideline" x1="70" y1="10" x2="70" y2="86" />
-      <line className="guideline" x1="24" y1="43" x2="116" y2="43" />
+    <svg viewBox="30 8 80 76" className="view-svg" role="img" aria-label="上面ビュー">
+      <rect className="view-bg" x="30" y="8" width="80" height="76" />
+      <line className="guideline" x1="70" y1="10" x2="70" y2="82" />
+      <line className="guideline" x1="35" y1="43" x2="105" y2="43" />
       {display.mode !== 'core' && <path className={`shape finished ${display.translucent ? 'soft' : ''}`} d={topOutline(project, 0)} />}
       {display.mode !== 'finished' && <path className="shape core" d={topOutline(project, coreInset)} />}
-      {!compact && <text className="view-title" x="8" y="10">上面</text>}
+      {!compact && <text className="view-title" x="34" y="15">上面</text>}
     </svg>
   );
 }
 
 function AngleView({ project }: { project: HeadProject }) {
+  const coreInset = project.display.mode === 'finished' ? project.core.coreInset + project.core.shellThickness : project.core.coreInset;
   return (
-    <svg viewBox="0 0 150 96" className="view-svg" role="img" aria-label="斜め45度ビュー">
-      <rect className="view-bg" width="150" height="96" />
-      <g transform="translate(9 0) skewY(-5) scale(0.88 1)">
-        <path className="shape angle-side" d={sideOutline(project, project.core.coreInset * 0.6)} />
-      </g>
-      <g transform="translate(22 0) skewY(5)">
-        <path className="shape core" d={frontOutline(project, project.core.coreInset)} />
-      </g>
-      <text className="view-title" x="8" y="10">斜め45度</text>
+    <svg viewBox="28 4 104 96" className="view-svg" role="img" aria-label="斜め45度ビュー">
+      <rect className="view-bg" x="28" y="4" width="104" height="96" />
+      {project.display.mode !== 'core' && <path className={`shape finished ${project.display.translucent ? 'soft' : ''}`} d={angleOutline(project, 0)} />}
+      {project.display.mode !== 'finished' && <path className="shape core" d={angleOutline(project, coreInset)} />}
+      <line className="feature angle-depth" x1="67" y1="39" x2="105" y2="45" />
+      <line className="feature angle-depth" x1="65" y1="59" x2="93" y2="66" />
+      <text className="view-title" x="32" y="11">斜め45度</text>
     </svg>
   );
 }
