@@ -1,0 +1,256 @@
+:root {
+  color: #111;
+  background: #e9ecef;
+  font-family: Arial, "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+body {
+  min-width: 320px;
+  background: #e9ecef;
+}
+
+.app-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-header p,
+.app-header h1 {
+  margin: 0;
+}
+
+.app-header p {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.app-header h1 {
+  font-size: clamp(1.35rem, 6vw, 2rem);
+  line-height: 1.1;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-actions button {
+  min-height: 44px;
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 0 12px;
+  color: #111;
+  background: #fff;
+  font-weight: 700;
+}
+
+.sheet-wrap {
+  overflow: auto;
+  border: 1px solid #8a8a8a;
+  background: #cfd4d8;
+  -webkit-overflow-scrolling: touch;
+}
+
+.a4-sheet {
+  display: block;
+  width: 297mm;
+  height: 210mm;
+  max-width: none;
+  background: #fff;
+}
+
+.sheet-bg {
+  fill: #fff;
+}
+
+.grid {
+  stroke: #d8d8d8;
+  stroke-width: 0.18;
+}
+
+.outline {
+  fill: none;
+  stroke: #000;
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+
+.feature-line {
+  fill: none;
+  stroke: #000;
+  stroke-width: 0.35;
+  vector-effect: non-scaling-stroke;
+}
+
+.datum {
+  stroke: #666;
+  stroke-width: 0.22;
+  stroke-dasharray: 2 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.point {
+  fill: #000;
+}
+
+.dimension {
+  stroke: #000;
+  stroke-width: 0.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.dimension text,
+.view-title,
+.sheet-note,
+.scale-check text {
+  stroke: none;
+  fill: #000;
+  font-size: 3.1px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.sheet-note {
+  font-size: 3px;
+  text-anchor: start;
+}
+
+.scale-check {
+  fill: none;
+  stroke: #000;
+  stroke-width: 0.35;
+  vector-effect: non-scaling-stroke;
+}
+
+.controls {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #b6bdc2;
+  border-radius: 6px;
+  background: #fff;
+}
+
+legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.dimension-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px 28px;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.dimension-input input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #8b959c;
+  border-radius: 4px;
+  padding: 0 8px;
+  text-align: right;
+}
+
+.dimension-input small {
+  color: #333;
+  font-weight: 700;
+}
+
+@media (min-width: 920px) {
+  .app-shell {
+    grid-template-columns: minmax(0, auto) 360px;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+    max-width: 1460px;
+    margin: 0 auto;
+  }
+
+  .app-header {
+    grid-column: 1 / -1;
+  }
+
+  .controls {
+    max-height: calc(100dvh - 92px);
+    overflow: auto;
+  }
+}
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    width: 297mm;
+    height: 210mm;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .app-shell {
+    display: block;
+    width: 297mm;
+    height: 210mm;
+    padding: 0;
+  }
+
+  .app-header,
+  .controls {
+    display: none;
+  }
+
+  .sheet-wrap {
+    overflow: visible;
+    border: 0;
+    width: 297mm;
+    height: 210mm;
+    background: #fff;
+  }
+
+  .a4-sheet {
+    width: 297mm;
+    height: 210mm;
+  }
+}
