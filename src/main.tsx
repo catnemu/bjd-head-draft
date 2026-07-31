@@ -2,87 +2,230 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
-type ViewMode = 'front' | 'side' | 'top';
-type PanelTab = 'head' | 'eye' | 'profile' | 'print';
+type AppScreen = 'home' | 'work' | 'output';
+type BasePresetId = 'sd' | 'sdm' | 'msd' | 'yosd' | 'original';
+type ViewMode = 'wire' | 'core' | 'finished';
+type OutputMode = 'finished' | 'templates' | 'crossCore';
+type ControlTab = 'base' | 'skull' | 'face' | 'core' | 'print';
 
 type HeadDimensions = {
-  headHeight: number;
-  maxWidth: number;
-  depth: number;
-  jawWidth: number;
+  totalHeight: number;
+  headWidth: number;
+  headDepth: number;
   neckWidth: number;
-  eyeHoleWidth: number;
-  eyeHoleHeight: number;
-  eyeHoleGap: number;
-  topToEyeCenter: number;
-  topToNoseTip: number;
-  topToMouth: number;
-  topToChin: number;
-  noseProjection: number;
-  mouthProjection: number;
+  neckOffsetX: number;
+  neckOffsetY: number;
+};
+
+type SkullShape = {
+  backRoundness: number;
+  foreheadProjection: number;
+  foreheadSlope: number;
+  templeWidth: number;
+  cheekboneWidth: number;
+  cheekVolume: number;
+  jawWidth: number;
+  jawLength: number;
+  jawAngle: number;
+  chinWidth: number;
   chinProjection: number;
 };
 
-type DimensionField = {
-  key: keyof HeadDimensions;
+type EyeSettings = {
+  height: number;
+  width: number;
+  gap: number;
+  tilt: number;
+  depth: number;
+  socketDepth: number;
+};
+
+type NoseSettings = {
+  bridge: number;
+  height: number;
+  length: number;
+  wingWidth: number;
+  tipRoundness: number;
+  tipHeight: number;
+};
+
+type MouthSettings = {
+  upperLip: number;
+  lowerLip: number;
+  width: number;
+  projection: number;
+  corner: number;
+};
+
+type EarSettings = {
+  height: number;
+  size: number;
+  position: number;
+  tilt: number;
+};
+
+type FaceLandmarks = {
+  eye: EyeSettings;
+  nose: NoseSettings;
+  mouth: MouthSettings;
+  ear: EarSettings;
+};
+
+type DisplaySettings = {
+  mode: ViewMode;
+  mirrored: boolean;
+  translucent: boolean;
+};
+
+type CoreSettings = {
+  coreInset: number;
+  shellThickness: number;
+  materialThickness: number;
+  slitClearance: number;
+  slitDepthRatio: number;
+  guideLines: boolean;
+};
+
+type PrintSettings = {
+  scale: number;
+  a4Split: boolean;
+  showGuides: boolean;
+};
+
+type HeadProject = {
+  base: BasePresetId;
+  dimensions: HeadDimensions;
+  skull: SkullShape;
+  face: FaceLandmarks;
+  display: DisplaySettings;
+  core: CoreSettings;
+  print: PrintSettings;
+};
+
+type NumericField<TGroup extends keyof HeadProject> = {
+  group: TGroup;
+  key: keyof HeadProject[TGroup];
   label: string;
   min: number;
   max: number;
-  tab: PanelTab;
+  unit?: string;
 };
 
-const STORAGE_KEY = 'bjd-head-orthographic-mm:v2';
-
-const defaultDimensions: HeadDimensions = {
-  headHeight: 180,
-  maxWidth: 92,
-  depth: 112,
-  jawWidth: 48,
-  neckWidth: 38,
-  eyeHoleWidth: 22,
-  eyeHoleHeight: 9,
-  eyeHoleGap: 18,
-  topToEyeCenter: 78,
-  topToNoseTip: 108,
-  topToMouth: 132,
-  topToChin: 166,
-  noseProjection: 18,
-  mouthProjection: 9,
-  chinProjection: 5,
+type FaceField = {
+  part: keyof FaceLandmarks;
+  key: string;
+  label: string;
+  min: number;
+  max: number;
+  unit?: string;
 };
 
-const dimensionFields: DimensionField[] = [
-  { key: 'headHeight', label: '頭部全高', min: 80, max: 190, tab: 'head' },
-  { key: 'maxWidth', label: '頭部最大幅', min: 40, max: 120, tab: 'head' },
-  { key: 'depth', label: '頭部前後長', min: 50, max: 135, tab: 'head' },
-  { key: 'jawWidth', label: '顎幅', min: 18, max: 80, tab: 'head' },
-  { key: 'neckWidth', label: '首幅', min: 12, max: 70, tab: 'head' },
-  { key: 'eyeHoleWidth', label: 'アイホール横幅', min: 6, max: 42, tab: 'eye' },
-  { key: 'eyeHoleHeight', label: 'アイホール縦幅', min: 3, max: 24, tab: 'eye' },
-  { key: 'eyeHoleGap', label: '左右アイホール間隔', min: 6, max: 48, tab: 'eye' },
-  { key: 'topToEyeCenter', label: '頭頂からアイホール中心', min: 25, max: 125, tab: 'eye' },
-  { key: 'topToNoseTip', label: '頭頂から鼻先', min: 45, max: 150, tab: 'profile' },
-  { key: 'topToMouth', label: '頭頂から口', min: 55, max: 170, tab: 'profile' },
-  { key: 'topToChin', label: '頭頂から顎先', min: 65, max: 190, tab: 'profile' },
-  { key: 'noseProjection', label: '鼻の突出量', min: 0, max: 38, tab: 'profile' },
-  { key: 'mouthProjection', label: '口元の突出量', min: 0, max: 28, tab: 'profile' },
-  { key: 'chinProjection', label: '顎の突出量', min: 0, max: 24, tab: 'profile' },
+const STORAGE_KEY = 'bjd-core-designer:v1';
+
+const basePresets: Record<BasePresetId, { label: string; dimensions: HeadDimensions; skull: SkullShape }> = {
+  sd: {
+    label: 'SD',
+    dimensions: { totalHeight: 70, headWidth: 48, headDepth: 56, neckWidth: 22, neckOffsetX: 0, neckOffsetY: 4 },
+    skull: { backRoundness: 72, foreheadProjection: 12, foreheadSlope: 4, templeWidth: 40, cheekboneWidth: 44, cheekVolume: 10, jawWidth: 30, jawLength: 18, jawAngle: 8, chinWidth: 16, chinProjection: 4 },
+  },
+  sdm: {
+    label: 'SDM',
+    dimensions: { totalHeight: 60, headWidth: 42, headDepth: 49, neckWidth: 18, neckOffsetX: 0, neckOffsetY: 3 },
+    skull: { backRoundness: 68, foreheadProjection: 10, foreheadSlope: 3, templeWidth: 35, cheekboneWidth: 38, cheekVolume: 9, jawWidth: 26, jawLength: 15, jawAngle: 7, chinWidth: 14, chinProjection: 3 },
+  },
+  msd: {
+    label: 'MSD',
+    dimensions: { totalHeight: 55, headWidth: 38, headDepth: 45, neckWidth: 16, neckOffsetX: 0, neckOffsetY: 3 },
+    skull: { backRoundness: 66, foreheadProjection: 9, foreheadSlope: 3, templeWidth: 32, cheekboneWidth: 35, cheekVolume: 8, jawWidth: 24, jawLength: 14, jawAngle: 6, chinWidth: 13, chinProjection: 3 },
+  },
+  yosd: {
+    label: '幼SD',
+    dimensions: { totalHeight: 50, headWidth: 36, headDepth: 42, neckWidth: 14, neckOffsetX: 0, neckOffsetY: 2 },
+    skull: { backRoundness: 78, foreheadProjection: 12, foreheadSlope: 2, templeWidth: 32, cheekboneWidth: 34, cheekVolume: 12, jawWidth: 22, jawLength: 12, jawAngle: 5, chinWidth: 12, chinProjection: 2 },
+  },
+  original: {
+    label: 'オリジナル',
+    dimensions: { totalHeight: 60, headWidth: 40, headDepth: 48, neckWidth: 18, neckOffsetX: 0, neckOffsetY: 3 },
+    skull: { backRoundness: 70, foreheadProjection: 10, foreheadSlope: 3, templeWidth: 34, cheekboneWidth: 38, cheekVolume: 9, jawWidth: 26, jawLength: 15, jawAngle: 7, chinWidth: 14, chinProjection: 3 },
+  },
+};
+
+const defaultProject: HeadProject = {
+  base: 'sdm',
+  dimensions: { ...basePresets.sdm.dimensions },
+  skull: { ...basePresets.sdm.skull },
+  face: {
+    eye: { height: 25, width: 9, gap: 10, tilt: 0, depth: 4, socketDepth: 3 },
+    nose: { bridge: 5, height: 6, length: 13, wingWidth: 10, tipRoundness: 5, tipHeight: 4 },
+    mouth: { upperLip: 2, lowerLip: 3, width: 16, projection: 3, corner: 0 },
+    ear: { height: 27, size: 14, position: 0, tilt: 0 },
+  },
+  display: { mode: 'core', mirrored: false, translucent: true },
+  core: { coreInset: 4, shellThickness: 5, materialThickness: 1.5, slitClearance: 0.2, slitDepthRatio: 0.52, guideLines: true },
+  print: { scale: 100, a4Split: false, showGuides: true },
+};
+
+const dimensionFields: NumericField<'dimensions'>[] = [
+  { group: 'dimensions', key: 'totalHeight', label: '頭頂から顎下', min: 45, max: 90, unit: 'mm' },
+  { group: 'dimensions', key: 'headWidth', label: '頭幅', min: 30, max: 70, unit: 'mm' },
+  { group: 'dimensions', key: 'headDepth', label: '頭奥行', min: 34, max: 76, unit: 'mm' },
+  { group: 'dimensions', key: 'neckWidth', label: '首の太さ', min: 10, max: 34, unit: 'mm' },
+  { group: 'dimensions', key: 'neckOffsetX', label: '首の左右位置', min: -8, max: 8, unit: 'mm' },
+  { group: 'dimensions', key: 'neckOffsetY', label: '首の前後位置', min: -8, max: 8, unit: 'mm' },
 ];
 
-const tabLabels: Record<PanelTab, string> = {
-  head: '頭部',
-  eye: 'アイホール',
-  profile: '鼻・口・顎',
-  print: '印刷',
-};
+const skullFields: NumericField<'skull'>[] = [
+  { group: 'skull', key: 'backRoundness', label: '後頭部の丸み', min: 40, max: 95 },
+  { group: 'skull', key: 'foreheadProjection', label: '前頭部の張り', min: 0, max: 20, unit: 'mm' },
+  { group: 'skull', key: 'foreheadSlope', label: '額の傾き', min: -8, max: 12 },
+  { group: 'skull', key: 'templeWidth', label: 'こめかみ', min: 24, max: 60, unit: 'mm' },
+  { group: 'skull', key: 'cheekboneWidth', label: '頬骨', min: 26, max: 65, unit: 'mm' },
+  { group: 'skull', key: 'cheekVolume', label: '頬の膨らみ', min: 0, max: 20 },
+  { group: 'skull', key: 'jawWidth', label: '顎幅', min: 14, max: 45, unit: 'mm' },
+  { group: 'skull', key: 'jawLength', label: '顎長', min: 8, max: 28, unit: 'mm' },
+  { group: 'skull', key: 'jawAngle', label: '顎角度', min: -6, max: 18 },
+  { group: 'skull', key: 'chinWidth', label: '顎先幅', min: 8, max: 30, unit: 'mm' },
+  { group: 'skull', key: 'chinProjection', label: '顎先の突出', min: -4, max: 12, unit: 'mm' },
+];
 
-function loadInitialDimensions(): HeadDimensions {
+const faceFields: FaceField[] = [
+  { part: 'eye', key: 'height', label: '目の高さ', min: 18, max: 38, unit: 'mm' },
+  { part: 'eye', key: 'width', label: '目の横幅', min: 4, max: 18, unit: 'mm' },
+  { part: 'eye', key: 'gap', label: '目の左右距離', min: 4, max: 20, unit: 'mm' },
+  { part: 'eye', key: 'tilt', label: '目の傾き', min: -12, max: 12 },
+  { part: 'eye', key: 'depth', label: '目の奥行', min: 0, max: 12, unit: 'mm' },
+  { part: 'eye', key: 'socketDepth', label: '眼窩の深さ', min: 0, max: 12, unit: 'mm' },
+  { part: 'nose', key: 'bridge', label: '鼻筋', min: 0, max: 12 },
+  { part: 'nose', key: 'height', label: '鼻の高さ', min: 0, max: 14, unit: 'mm' },
+  { part: 'nose', key: 'length', label: '鼻の長さ', min: 6, max: 24, unit: 'mm' },
+  { part: 'nose', key: 'wingWidth', label: '小鼻幅', min: 5, max: 18, unit: 'mm' },
+  { part: 'nose', key: 'tipRoundness', label: '鼻先形状', min: 0, max: 12 },
+  { part: 'nose', key: 'tipHeight', label: '鼻先の高さ', min: 0, max: 12, unit: 'mm' },
+  { part: 'mouth', key: 'upperLip', label: '上唇厚み', min: 0, max: 8, unit: 'mm' },
+  { part: 'mouth', key: 'lowerLip', label: '下唇厚み', min: 0, max: 8, unit: 'mm' },
+  { part: 'mouth', key: 'width', label: '唇の横幅', min: 8, max: 28, unit: 'mm' },
+  { part: 'mouth', key: 'projection', label: '唇の突出量', min: 0, max: 10, unit: 'mm' },
+  { part: 'mouth', key: 'corner', label: '口角', min: -8, max: 8 },
+  { part: 'ear', key: 'height', label: '耳の高さ', min: 18, max: 45, unit: 'mm' },
+  { part: 'ear', key: 'size', label: '耳の大きさ', min: 8, max: 24, unit: 'mm' },
+  { part: 'ear', key: 'position', label: '耳の前後位置', min: -10, max: 10, unit: 'mm' },
+  { part: 'ear', key: 'tilt', label: '耳の傾き', min: -12, max: 12 },
+];
+
+const coreFields: NumericField<'core'>[] = [
+  { group: 'core', key: 'coreInset', label: '芯の控え量', min: 1, max: 12, unit: 'mm' },
+  { group: 'core', key: 'shellThickness', label: '肉付け厚み', min: 1, max: 12, unit: 'mm' },
+  { group: 'core', key: 'materialThickness', label: 'スリット幅', min: 0.5, max: 5, unit: 'mm' },
+  { group: 'core', key: 'slitClearance', label: '差し込み余裕', min: 0, max: 1, unit: 'mm' },
+  { group: 'core', key: 'slitDepthRatio', label: 'スリット深さ', min: 0.35, max: 0.7 },
+];
+
+function loadProject() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultDimensions;
-    return { ...defaultDimensions, ...JSON.parse(raw) };
+    return raw ? { ...defaultProject, ...JSON.parse(raw) } as HeadProject : defaultProject;
   } catch {
-    return defaultDimensions;
+    return defaultProject;
   }
 }
 
@@ -90,367 +233,515 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function updateDimensionValue(current: HeadDimensions, key: keyof HeadDimensions, value: number): HeadDimensions {
-  const next = { ...current, [key]: value };
-  next.topToChin = clamp(next.topToChin, 1, next.headHeight);
-  next.topToMouth = clamp(next.topToMouth, 1, next.topToChin - 2);
-  next.topToNoseTip = clamp(next.topToNoseTip, 1, next.topToMouth - 2);
-  next.topToEyeCenter = clamp(next.topToEyeCenter, 1, next.topToNoseTip - 2);
-  next.jawWidth = clamp(next.jawWidth, 1, next.maxWidth);
-  next.neckWidth = clamp(next.neckWidth, 1, next.jawWidth);
-  return next;
+function n(value: number) {
+  return Number(value.toFixed(2));
 }
 
-function frontOutlinePath(dim: HeadDimensions, centerX: number, topY: number) {
-  const h = dim.headHeight;
-  const halfMax = dim.maxWidth / 2;
-  const halfJaw = dim.jawWidth / 2;
-  const chinY = topY + dim.topToChin;
-  const bottomY = topY + h;
-  const templeY = topY + h * 0.34;
-  const cheekY = topY + h * 0.66;
-  const jawY = topY + dim.topToChin * 0.88;
+function frontOutline(project: HeadProject, inset = 0) {
+  const { dimensions: d, skull: s } = project;
+  const h = d.totalHeight - inset * 1.2;
+  const centerX = 70;
+  const topY = 12 + inset * 0.6;
+  const templeY = topY + h * 0.31;
+  const cheekY = topY + h * 0.58;
+  const jawY = topY + h - s.jawLength;
+  const chinY = topY + h;
+  const maxHalf = Math.max(4, d.headWidth / 2 - inset);
+  const templeHalf = Math.max(4, s.templeWidth / 2 - inset * 0.7);
+  const cheekHalf = Math.max(4, (s.cheekboneWidth + s.cheekVolume * 0.35) / 2 - inset);
+  const jawHalf = Math.max(3, s.jawWidth / 2 - inset * 0.75);
+  const chinHalf = Math.max(2, s.chinWidth / 2 - inset * 0.5);
+  const jawPull = s.jawAngle * 0.35;
 
   return [
-    `M ${centerX} ${topY}`,
-    `C ${centerX - halfMax * 0.85} ${topY + h * 0.03}, ${centerX - halfMax} ${templeY - 12}, ${centerX - halfMax} ${templeY}`,
-    `C ${centerX - halfMax * 0.95} ${cheekY}, ${centerX - halfJaw * 1.18} ${jawY}, ${centerX - halfJaw} ${chinY - 10}`,
-    `C ${centerX - halfJaw * 0.78} ${bottomY - 4}, ${centerX - halfJaw * 0.25} ${bottomY}, ${centerX} ${bottomY}`,
-    `C ${centerX + halfJaw * 0.25} ${bottomY}, ${centerX + halfJaw * 0.78} ${bottomY - 4}, ${centerX + halfJaw} ${chinY - 10}`,
-    `C ${centerX + halfJaw * 1.18} ${jawY}, ${centerX + halfMax * 0.95} ${cheekY}, ${centerX + halfMax} ${templeY}`,
-    `C ${centerX + halfMax} ${templeY - 12}, ${centerX + halfMax * 0.85} ${topY + h * 0.03}, ${centerX} ${topY}`,
+    `M ${n(centerX)} ${n(topY)}`,
+    `C ${n(centerX - maxHalf * 0.9)} ${n(topY + 2)}, ${n(centerX - maxHalf)} ${n(templeY - 7)}, ${n(centerX - templeHalf)} ${n(templeY)}`,
+    `C ${n(centerX - cheekHalf)} ${n(cheekY - 6)}, ${n(centerX - cheekHalf + jawPull)} ${n(cheekY + 4)}, ${n(centerX - jawHalf)} ${n(jawY)}`,
+    `C ${n(centerX - chinHalf)} ${n(chinY - 4)}, ${n(centerX - chinHalf)} ${n(chinY)}, ${n(centerX)} ${n(chinY)}`,
+    `C ${n(centerX + chinHalf)} ${n(chinY)}, ${n(centerX + chinHalf)} ${n(chinY - 4)}, ${n(centerX + jawHalf)} ${n(jawY)}`,
+    `C ${n(centerX + cheekHalf - jawPull)} ${n(cheekY + 4)}, ${n(centerX + cheekHalf)} ${n(cheekY - 6)}, ${n(centerX + templeHalf)} ${n(templeY)}`,
+    `C ${n(centerX + maxHalf)} ${n(templeY - 7)}, ${n(centerX + maxHalf * 0.9)} ${n(topY + 2)}, ${n(centerX)} ${n(topY)}`,
     'Z',
   ].join(' ');
 }
 
-function sideOutlinePath(dim: HeadDimensions, originX: number, topY: number) {
-  const h = dim.headHeight;
-  const rearX = originX;
-  const facePlaneX = originX + dim.depth * 0.65;
-  const noseX = originX + dim.depth + dim.noseProjection;
-  const mouthX = originX + dim.depth + dim.mouthProjection;
-  const chinX = originX + dim.depth * 0.82 + dim.chinProjection;
-  const bottomY = topY + h;
-  const eyeY = topY + dim.topToEyeCenter;
-  const noseY = topY + dim.topToNoseTip;
-  const mouthY = topY + dim.topToMouth;
-  const chinY = topY + dim.topToChin;
+function sideOutline(project: HeadProject, inset = 0) {
+  const { dimensions: d, skull: s, face } = project;
+  const h = d.totalHeight - inset * 1.2;
+  const rearX = 170 + inset * 0.4;
+  const topY = 12 + inset * 0.6;
+  const depth = Math.max(12, d.headDepth - inset * 1.5);
+  const back = rearX + (100 - s.backRoundness) * 0.08;
+  const facePlane = rearX + depth * 0.72;
+  const foreheadX = facePlane + s.foreheadProjection - s.foreheadSlope * 0.35;
+  const noseY = topY + face.nose.length + face.eye.height + 6;
+  const mouthY = topY + h * 0.72;
+  const chinY = topY + h;
+  const noseX = facePlane + face.nose.height + face.nose.tipHeight - inset * 0.5;
+  const lipX = facePlane + face.mouth.projection - inset * 0.4;
+  const chinX = facePlane - 4 + s.chinProjection - inset * 0.5;
 
   return [
-    `M ${originX + dim.depth * 0.42} ${topY}`,
-    `C ${rearX + 8} ${topY + 8}, ${rearX} ${topY + h * 0.28}, ${rearX + 5} ${topY + h * 0.5}`,
-    `C ${rearX + 8} ${topY + h * 0.76}, ${rearX + 38} ${bottomY}, ${originX + dim.depth * 0.58} ${bottomY}`,
-    `C ${originX + dim.depth * 0.72} ${bottomY}, ${chinX} ${chinY + 7}, ${chinX} ${chinY}`,
-    `C ${mouthX + 3} ${mouthY + 16}, ${mouthX + 1} ${mouthY + 4}, ${mouthX} ${mouthY}`,
-    `C ${mouthX - 2} ${mouthY - 10}, ${noseX - 6} ${noseY + 9}, ${noseX} ${noseY}`,
-    `C ${facePlaneX + 10} ${eyeY + 8}, ${facePlaneX + 9} ${eyeY - 22}, ${facePlaneX} ${eyeY - 30}`,
-    `C ${facePlaneX - 10} ${topY + h * 0.16}, ${originX + dim.depth * 0.78} ${topY}, ${originX + dim.depth * 0.42} ${topY}`,
+    `M ${n(rearX + depth * 0.45)} ${n(topY)}`,
+    `C ${n(back - 8)} ${n(topY + 8)}, ${n(back - 9)} ${n(topY + h * 0.45)}, ${n(back)} ${n(topY + h * 0.65)}`,
+    `C ${n(back + 7)} ${n(topY + h * 0.88)}, ${n(rearX + depth * 0.45)} ${n(chinY)}, ${n(chinX)} ${n(chinY)}`,
+    `C ${n(lipX - 3)} ${n(mouthY + 12)}, ${n(lipX)} ${n(mouthY + 4)}, ${n(lipX)} ${n(mouthY)}`,
+    `C ${n(lipX - 2)} ${n(mouthY - 7)}, ${n(noseX - face.nose.tipRoundness * 0.3)} ${n(noseY + 5)}, ${n(noseX)} ${n(noseY)}`,
+    `C ${n(foreheadX + 2)} ${n(topY + h * 0.36)}, ${n(foreheadX)} ${n(topY + h * 0.1)}, ${n(rearX + depth * 0.45)} ${n(topY)}`,
     'Z',
   ].join(' ');
 }
 
-function eyeHolePath(cx: number, cy: number, width: number, height: number) {
+function topOutline(project: HeadProject, inset = 0) {
+  const { dimensions: d, skull: s } = project;
+  const cx = 70;
+  const cy = 43;
+  const rx = Math.max(8, d.headWidth / 2 - inset);
+  const ry = Math.max(8, d.headDepth / 2 - inset);
+  const cheek = (s.cheekboneWidth - d.headWidth) * 0.12 + s.cheekVolume * 0.12;
+  const temple = (s.templeWidth - d.headWidth) * 0.08;
   return [
-    `M ${cx - width / 2} ${cy}`,
-    `C ${cx - width * 0.32} ${cy - height * 0.82}, ${cx + width * 0.3} ${cy - height * 0.82}, ${cx + width / 2} ${cy}`,
-    `C ${cx + width * 0.22} ${cy + height * 0.55}, ${cx - width * 0.28} ${cy + height * 0.55}, ${cx - width / 2} ${cy}`,
+    `M ${n(cx)} ${n(cy - ry)}`,
+    `C ${n(cx - rx + temple)} ${n(cy - ry * 0.78)}, ${n(cx - rx - cheek)} ${n(cy - ry * 0.15)}, ${n(cx - rx * 0.86)} ${n(cy + ry * 0.33)}`,
+    `C ${n(cx - rx * 0.55)} ${n(cy + ry * 0.95)}, ${n(cx - rx * 0.25)} ${n(cy + ry)}, ${n(cx)} ${n(cy + ry)}`,
+    `C ${n(cx + rx * 0.25)} ${n(cy + ry)}, ${n(cx + rx * 0.55)} ${n(cy + ry * 0.95)}, ${n(cx + rx * 0.86)} ${n(cy + ry * 0.33)}`,
+    `C ${n(cx + rx + cheek)} ${n(cy - ry * 0.15)}, ${n(cx + rx - temple)} ${n(cy - ry * 0.78)}, ${n(cx)} ${n(cy - ry)}`,
     'Z',
   ].join(' ');
 }
 
-function DimensionLine({ x1, y1, x2, y2, label }: { x1: number; y1: number; x2: number; y2: number; label: string }) {
-  const midX = (x1 + x2) / 2;
-  const midY = (y1 + y2) / 2;
-  const isVertical = Math.abs(y2 - y1) > Math.abs(x2 - x1);
+function eyePath(cx: number, cy: number, width: number, height: number, tilt: number) {
+  const skew = tilt * 0.07;
+  return [
+    `M ${n(cx - width / 2)} ${n(cy + skew)}`,
+    `C ${n(cx - width * 0.25)} ${n(cy - height * 0.45)}, ${n(cx + width * 0.25)} ${n(cy - height * 0.45)}, ${n(cx + width / 2)} ${n(cy - skew)}`,
+    `C ${n(cx + width * 0.28)} ${n(cy + height * 0.45)}, ${n(cx - width * 0.28)} ${n(cy + height * 0.45)}, ${n(cx - width / 2)} ${n(cy + skew)}`,
+    'Z',
+  ].join(' ');
+}
 
+function GuideLines({ project, variant }: { project: HeadProject; variant: 'front' | 'side' | 'top' }) {
+  if (!project.print.showGuides && !project.core.guideLines) return null;
+  const h = project.dimensions.totalHeight;
+  const topY = 12;
+  const eyeY = topY + project.face.eye.height;
+  const noseY = eyeY + project.face.nose.length;
+  const mouthY = topY + h * 0.72;
+  const chinY = topY + h;
+  const x1 = variant === 'side' ? 150 : 25;
+  const x2 = variant === 'side' ? 240 : 115;
+  const cx = variant === 'side' ? 190 : 70;
   return (
-    <g className="dimension">
-      <line x1={x1} y1={y1} x2={x2} y2={y2} />
-      <line x1={x1 - (isVertical ? 3 : 0)} y1={y1 - (isVertical ? 0 : 3)} x2={x1 + (isVertical ? 3 : 0)} y2={y1 + (isVertical ? 0 : 3)} />
-      <line x1={x2 - (isVertical ? 3 : 0)} y1={y2 - (isVertical ? 0 : 3)} x2={x2 + (isVertical ? 3 : 0)} y2={y2 + (isVertical ? 0 : 3)} />
-      <text x={midX + (isVertical ? 4 : 0)} y={midY - (isVertical ? 0 : 4)}>{label}</text>
+    <g className="guides">
+      <line x1={cx} y1={topY} x2={cx} y2={chinY} />
+      <line x1={x1} y1={eyeY} x2={x2} y2={eyeY} />
+      <line x1={x1} y1={noseY} x2={x2} y2={noseY} />
+      <line x1={x1} y1={mouthY} x2={x2} y2={mouthY} />
+      <line x1={x1} y1={chinY} x2={x2} y2={chinY} />
+      <text x={x2 + 3} y={eyeY + 1}>目線</text>
+      <text x={x2 + 3} y={noseY + 1}>鼻線</text>
+      <text x={x2 + 3} y={mouthY + 1}>口線</text>
+      <text x={x2 + 3} y={chinY + 1}>顎</text>
     </g>
   );
 }
 
-function Grid() {
-  const lines = [];
-  for (let x = 0; x <= 297; x += 10) lines.push(<line key={`x${x}`} x1={x} y1={0} x2={x} y2={210} />);
-  for (let y = 0; y <= 210; y += 10) lines.push(<line key={`y${y}`} x1={0} y1={y} x2={297} y2={y} />);
-  return <g className="grid">{lines}</g>;
-}
-
-function highlightClass(activeKey: keyof HeadDimensions | null, keys: (keyof HeadDimensions)[]) {
-  return activeKey && keys.includes(activeKey) ? ' is-highlighted' : '';
-}
-
-function FrontView({ dim, activeKey }: { dim: HeadDimensions; activeKey: keyof HeadDimensions | null }) {
-  const centerX = 58;
-  const topY = 15;
-  const eyeY = topY + dim.topToEyeCenter;
-  const leftEyeX = centerX - (dim.eyeHoleGap / 2 + dim.eyeHoleWidth / 2);
-  const rightEyeX = centerX + (dim.eyeHoleGap / 2 + dim.eyeHoleWidth / 2);
-  const maxLeft = centerX - dim.maxWidth / 2;
-  const maxRight = centerX + dim.maxWidth / 2;
-  const chinY = topY + dim.topToChin;
-  const mouthY = topY + dim.topToMouth;
-  const noseY = topY + dim.topToNoseTip;
-
+function FrontView({ project, compact = false }: { project: HeadProject; compact?: boolean }) {
+  const { dimensions: d, face, core, display } = project;
+  const cx = 70;
+  const topY = 12;
+  const eyeY = topY + face.eye.height;
+  const leftEye = cx - face.eye.gap / 2 - face.eye.width / 2;
+  const rightEye = cx + face.eye.gap / 2 + face.eye.width / 2;
+  const coreInset = display.mode === 'finished' ? core.coreInset + core.shellThickness : core.coreInset;
   return (
-    <g>
-      <text className="view-title" x={centerX} y={9}>正面図</text>
-      <path className={`outline${highlightClass(activeKey, ['headHeight', 'maxWidth', 'jawWidth'])}`} d={frontOutlinePath(dim, centerX, topY)} />
-      <line className="datum" x1={centerX} y1={topY} x2={centerX} y2={topY + dim.headHeight} />
-      <line className={`datum${highlightClass(activeKey, ['topToEyeCenter'])}`} x1={maxLeft} y1={eyeY} x2={maxRight} y2={eyeY} />
-      <path className={`feature-line${highlightClass(activeKey, ['eyeHoleWidth', 'eyeHoleHeight', 'eyeHoleGap', 'topToEyeCenter'])}`} d={eyeHolePath(leftEyeX, eyeY, dim.eyeHoleWidth, dim.eyeHoleHeight)} />
-      <path className={`feature-line${highlightClass(activeKey, ['eyeHoleWidth', 'eyeHoleHeight', 'eyeHoleGap', 'topToEyeCenter'])}`} d={eyeHolePath(rightEyeX, eyeY, dim.eyeHoleWidth, dim.eyeHoleHeight)} />
-      <path className={`feature-line${highlightClass(activeKey, ['topToNoseTip'])}`} d={`M ${centerX - 3} ${noseY - 7} L ${centerX} ${noseY} L ${centerX + 3} ${noseY - 7}`} />
-      <line className={`feature-line${highlightClass(activeKey, ['topToMouth'])}`} x1={centerX - dim.jawWidth * 0.28} y1={mouthY} x2={centerX + dim.jawWidth * 0.28} y2={mouthY} />
-      <line className={`feature-line${highlightClass(activeKey, ['neckWidth'])}`} x1={centerX - dim.neckWidth / 2} y1={topY + dim.headHeight} x2={centerX - dim.neckWidth / 2} y2={202} />
-      <line className={`feature-line${highlightClass(activeKey, ['neckWidth'])}`} x1={centerX + dim.neckWidth / 2} y1={topY + dim.headHeight} x2={centerX + dim.neckWidth / 2} y2={202} />
-      <DimensionLine x1={maxLeft} y1={topY + dim.headHeight + 6} x2={maxRight} y2={topY + dim.headHeight + 6} label={`${dim.maxWidth}mm`} />
-      <DimensionLine x1={maxRight + 8} y1={topY} x2={maxRight + 8} y2={topY + dim.headHeight} label={`${dim.headHeight}mm`} />
-      <DimensionLine x1={leftEyeX + dim.eyeHoleWidth / 2} y1={eyeY + 12} x2={rightEyeX - dim.eyeHoleWidth / 2} y2={eyeY + 12} label={`${dim.eyeHoleGap}mm`} />
-      <DimensionLine x1={maxLeft - 8} y1={topY} x2={maxLeft - 8} y2={eyeY} label={`${dim.topToEyeCenter}mm`} />
-      <DimensionLine x1={maxLeft - 14} y1={topY} x2={maxLeft - 14} y2={chinY} label={`${dim.topToChin}mm`} />
-    </g>
+    <svg viewBox="0 0 140 96" className="view-svg" role="img" aria-label="正面ビュー">
+      <rect className="view-bg" width="140" height="96" />
+      <GuideLines project={project} variant="front" />
+      {display.mode !== 'core' && <path className={`shape finished ${display.translucent ? 'soft' : ''}`} d={frontOutline(project, 0)} />}
+      {display.mode !== 'finished' && <path className="shape core" d={frontOutline(project, coreInset)} />}
+      <path className="feature" d={eyePath(leftEye, eyeY, face.eye.width, 3.2, face.eye.tilt)} />
+      <path className="feature" d={eyePath(rightEye, eyeY, face.eye.width, 3.2, -face.eye.tilt)} />
+      <path className="feature" d={`M ${cx - 2} ${topY + face.eye.height + face.nose.length - 4} L ${cx} ${topY + face.eye.height + face.nose.length} L ${cx + 2} ${topY + face.eye.height + face.nose.length - 4}`} />
+      <path className="feature" d={`M ${cx - face.mouth.width / 2} ${topY + d.totalHeight * 0.72} Q ${cx} ${topY + d.totalHeight * 0.72 + face.mouth.corner * 0.15} ${cx + face.mouth.width / 2} ${topY + d.totalHeight * 0.72}`} />
+      <line className="neck" x1={cx - d.neckWidth / 2 + d.neckOffsetX} y1={topY + d.totalHeight} x2={cx - d.neckWidth / 2 + d.neckOffsetX} y2={94} />
+      <line className="neck" x1={cx + d.neckWidth / 2 + d.neckOffsetX} y1={topY + d.totalHeight} x2={cx + d.neckWidth / 2 + d.neckOffsetX} y2={94} />
+      {!compact && <text className="view-title" x="8" y="10">正面</text>}
+    </svg>
   );
 }
 
-function SideView({ dim, activeKey }: { dim: HeadDimensions; activeKey: keyof HeadDimensions | null }) {
-  const originX = 132;
-  const topY = 15;
-  const eyeY = topY + dim.topToEyeCenter;
-  const noseY = topY + dim.topToNoseTip;
-  const mouthY = topY + dim.topToMouth;
-  const chinY = topY + dim.topToChin;
-  const rearX = originX;
-  const frontX = originX + dim.depth;
-
+function SideView({ project, compact = false }: { project: HeadProject; compact?: boolean }) {
+  const { dimensions: d, face, core, display } = project;
+  const coreInset = display.mode === 'finished' ? core.coreInset + core.shellThickness : core.coreInset;
+  const topY = 12;
+  const earY = topY + face.ear.height;
+  const earX = 171 + d.headDepth * 0.35 + face.ear.position;
   return (
-    <g>
-      <text className="view-title" x={originX + dim.depth / 2} y={9}>真横図</text>
-      <path className={`outline${highlightClass(activeKey, ['headHeight', 'depth', 'noseProjection', 'mouthProjection', 'chinProjection'])}`} d={sideOutlinePath(dim, originX, topY)} />
-      <line className="datum" x1={rearX} y1={topY} x2={rearX + dim.depth + 35} y2={topY} />
-      <line className={`datum${highlightClass(activeKey, ['topToEyeCenter'])}`} x1={rearX} y1={eyeY} x2={rearX + dim.depth + 35} y2={eyeY} />
-      <path className={`feature-line${highlightClass(activeKey, ['eyeHoleWidth', 'eyeHoleHeight', 'topToEyeCenter'])}`} d={eyeHolePath(originX + dim.depth * 0.72, eyeY, dim.eyeHoleWidth * 0.34, dim.eyeHoleHeight)} />
-      <circle className={`point${highlightClass(activeKey, ['topToNoseTip', 'noseProjection'])}`} cx={frontX + dim.noseProjection} cy={noseY} r={1.5} />
-      <line className={`feature-line${highlightClass(activeKey, ['topToMouth', 'mouthProjection'])}`} x1={frontX + dim.mouthProjection - 8} y1={mouthY} x2={frontX + dim.mouthProjection + 6} y2={mouthY} />
-      <circle className={`point${highlightClass(activeKey, ['topToChin', 'chinProjection'])}`} cx={originX + dim.depth * 0.82 + dim.chinProjection} cy={chinY} r={1.5} />
-      <DimensionLine x1={rearX} y1={topY + dim.headHeight + 6} x2={frontX} y2={topY + dim.headHeight + 6} label={`${dim.depth}mm`} />
-      <DimensionLine x1={frontX} y1={noseY - 9} x2={frontX + dim.noseProjection} y2={noseY - 9} label={`${dim.noseProjection}mm`} />
-      <DimensionLine x1={frontX} y1={mouthY + 8} x2={frontX + dim.mouthProjection} y2={mouthY + 8} label={`${dim.mouthProjection}mm`} />
-      <DimensionLine x1={frontX} y1={chinY + 8} x2={originX + dim.depth * 0.82 + dim.chinProjection} y2={chinY + 8} label={`${dim.chinProjection}mm`} />
-    </g>
+    <svg viewBox="140 0 120 96" className="view-svg" role="img" aria-label="側面ビュー">
+      <rect className="view-bg" x="140" width="120" height="96" />
+      <GuideLines project={project} variant="side" />
+      {display.mode !== 'core' && <path className={`shape finished ${display.translucent ? 'soft' : ''}`} d={sideOutline(project, 0)} />}
+      {display.mode !== 'finished' && <path className="shape core" d={sideOutline(project, coreInset)} />}
+      <ellipse className="feature" cx={earX} cy={earY} rx={face.ear.size * 0.28} ry={face.ear.size * 0.52} transform={`rotate(${face.ear.tilt} ${earX} ${earY})`} />
+      <line className="neck" x1={185 + d.neckOffsetY} y1={topY + d.totalHeight - 4} x2={185 + d.neckOffsetY} y2={94} />
+      {!compact && <text className="view-title" x="148" y="10">側面</text>}
+    </svg>
   );
 }
 
-function TopView({ dim, activeKey }: { dim: HeadDimensions; activeKey: keyof HeadDimensions | null }) {
-  const centerX = 245;
-  const centerY = 56;
+function TopView({ project, compact = false }: { project: HeadProject; compact?: boolean }) {
+  const { core, display } = project;
+  const coreInset = display.mode === 'finished' ? core.coreInset + core.shellThickness : core.coreInset;
   return (
-    <g>
-      <text className="view-title" x={centerX} y={9}>上面図</text>
-      <ellipse className={`outline${highlightClass(activeKey, ['maxWidth', 'depth'])}`} cx={centerX} cy={centerY} rx={dim.maxWidth / 2} ry={dim.depth / 2} />
-      <line className="datum" x1={centerX} y1={centerY - dim.depth / 2} x2={centerX} y2={centerY + dim.depth / 2} />
-      <line className="datum" x1={centerX - dim.maxWidth / 2} y1={centerY} x2={centerX + dim.maxWidth / 2} y2={centerY} />
-      <DimensionLine x1={centerX - dim.maxWidth / 2} y1={centerY + dim.depth / 2 + 7} x2={centerX + dim.maxWidth / 2} y2={centerY + dim.depth / 2 + 7} label={`${dim.maxWidth}mm`} />
-      <DimensionLine x1={centerX + dim.maxWidth / 2 + 7} y1={centerY - dim.depth / 2} x2={centerX + dim.maxWidth / 2 + 7} y2={centerY + dim.depth / 2} label={`${dim.depth}mm`} />
-    </g>
+    <svg viewBox="0 0 140 96" className="view-svg" role="img" aria-label="上面ビュー">
+      <rect className="view-bg" width="140" height="96" />
+      <line className="guideline" x1="70" y1="10" x2="70" y2="86" />
+      <line className="guideline" x1="24" y1="43" x2="116" y2="43" />
+      {display.mode !== 'core' && <path className={`shape finished ${display.translucent ? 'soft' : ''}`} d={topOutline(project, 0)} />}
+      {display.mode !== 'finished' && <path className="shape core" d={topOutline(project, coreInset)} />}
+      {!compact && <text className="view-title" x="8" y="10">上面</text>}
+    </svg>
   );
 }
 
-function ScaleCheck() {
+function AngleView({ project }: { project: HeadProject }) {
   return (
-    <g className="scale-check">
-      <rect x={232} y={148} width={50} height={50} />
-      <line x1={232} y1={173} x2={282} y2={173} />
-      <line x1={257} y1={148} x2={257} y2={198} />
-      <text x={257} y={144}>50mm検尺枠</text>
-    </g>
+    <svg viewBox="0 0 150 96" className="view-svg" role="img" aria-label="斜め45度ビュー">
+      <rect className="view-bg" width="150" height="96" />
+      <g transform="translate(9 0) skewY(-5) scale(0.88 1)">
+        <path className="shape angle-side" d={sideOutline(project, project.core.coreInset * 0.6)} />
+      </g>
+      <g transform="translate(22 0) skewY(5)">
+        <path className="shape core" d={frontOutline(project, project.core.coreInset)} />
+      </g>
+      <text className="view-title" x="8" y="10">斜め45度</text>
+    </svg>
   );
 }
 
-function ViewContent({ view, dim, activeKey }: { view: ViewMode; dim: HeadDimensions; activeKey: keyof HeadDimensions | null }) {
-  if (view === 'front') return <FrontView dim={dim} activeKey={activeKey} />;
-  if (view === 'side') return <SideView dim={dim} activeKey={activeKey} />;
-  return <TopView dim={dim} activeKey={activeKey} />;
-}
-
-function EditablePreview({
-  dim,
-  view,
-  zoom,
-  activeKey,
-}: {
-  dim: HeadDimensions;
-  view: ViewMode;
-  zoom: number;
-  activeKey: keyof HeadDimensions | null;
-}) {
+function ViewGrid({ project }: { project: HeadProject }) {
   return (
-    <div className="preview-canvas">
-      <svg
-        className="preview-svg"
-        style={{ transform: `scale(${zoom})` }}
-        viewBox={view === 'front' ? '0 0 116 210' : view === 'side' ? '120 0 162 210' : '190 0 105 125'}
-        role="img"
-        aria-label="縮小プレビュー"
-      >
-        <Grid />
-        <ViewContent view={view} dim={dim} activeKey={activeKey} />
-      </svg>
-    </div>
-  );
-}
-
-function PrintableSheet({ dim, activeKey }: { dim: HeadDimensions; activeKey: keyof HeadDimensions | null }) {
-  return (
-    <section className="print-sheet-wrap" aria-label="A4実寸設計図">
-      <svg className="a4-sheet" width="297mm" height="210mm" viewBox="0 0 297 210" role="img" aria-label="BJDヘッド実寸正投影図">
-        <rect className="sheet-bg" width={297} height={210} />
-        <Grid />
-        <FrontView dim={dim} activeKey={activeKey} />
-        <SideView dim={dim} activeKey={activeKey} />
-        <TopView dim={dim} activeKey={activeKey} />
-        <ScaleCheck />
-        <text className="sheet-note" x={10} y={205}>A4横 / 100%倍率で印刷 / 自動縮小なし / 単位:mm</text>
-      </svg>
+    <section className={`view-grid ${project.display.mirrored ? 'mirrored' : ''}`} aria-label="連動プレビュー">
+      <div className="view-cell"><FrontView project={project} /></div>
+      <div className="view-cell"><SideView project={project} /></div>
+      <div className="view-cell"><AngleView project={project} /></div>
+      <div className="view-cell"><TopView project={project} /></div>
     </section>
   );
 }
 
-function DimensionControl({
-  field,
-  value,
-  onChange,
-  onFocus,
-}: {
-  field: DimensionField;
-  value: number;
-  onChange: (value: number) => void;
-  onFocus: () => void;
-}) {
+function FieldControl({ label, value, min, max, unit, onChange }: { label: string; value: number; min: number; max: number; unit?: string; onChange: (value: number) => void }) {
+  const step = max - min <= 2 ? 0.1 : 1;
   return (
-    <div className="dimension-control">
-      <label className="number-row">
-        <span>{field.label}</span>
-        <span className="number-unit">
-          <input
-            type="number"
+    <label className="field-control">
+      <span>{label}</span>
+      <span className="number-input">
+        <input type="number" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+        <small>{unit ?? ''}</small>
+      </span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+    </label>
+  );
+}
+
+function Controls({ project, setProject, setScreen }: { project: HeadProject; setProject: React.Dispatch<React.SetStateAction<HeadProject>>; setScreen: (screen: AppScreen) => void }) {
+  const [tab, setTab] = useState<ControlTab>('base');
+
+  function updateGroup<TGroup extends 'dimensions' | 'skull' | 'core'>(group: TGroup, key: keyof HeadProject[TGroup], value: number) {
+    setProject((current) => ({
+      ...current,
+      [group]: {
+        ...current[group],
+        [key]: value,
+      },
+    }));
+  }
+
+  function updateFace(part: keyof FaceLandmarks, key: string, value: number) {
+    setProject((current) => ({
+      ...current,
+      face: {
+        ...current.face,
+        [part]: {
+          ...current.face[part],
+          [key]: value,
+        },
+      },
+    }));
+  }
+
+  function updatePrint(key: keyof PrintSettings, value: number | boolean) {
+    setProject((current) => ({
+      ...current,
+      print: {
+        ...current.print,
+        [key]: value,
+      },
+    }));
+  }
+
+  function applyPreset(id: BasePresetId) {
+    setProject((current) => ({
+      ...current,
+      base: id,
+      dimensions: { ...basePresets[id].dimensions },
+      skull: { ...basePresets[id].skull },
+    }));
+  }
+
+  return (
+    <aside className="control-panel">
+      <div className="panel-tabs" role="tablist" aria-label="設定カテゴリ">
+        {[
+          ['base', '基本'],
+          ['skull', '頭蓋'],
+          ['face', '顔'],
+          ['core', '芯'],
+          ['print', '印刷'],
+        ].map(([id, label]) => (
+          <button key={id} type="button" className={tab === id ? 'active' : ''} onClick={() => setTab(id as ControlTab)}>{label}</button>
+        ))}
+      </div>
+
+      <div className="panel-body">
+        {tab === 'base' && (
+          <>
+            <div className="preset-grid">
+              {(Object.keys(basePresets) as BasePresetId[]).map((id) => (
+                <button key={id} type="button" className={project.base === id ? 'active' : ''} onClick={() => applyPreset(id)}>{basePresets[id].label}</button>
+              ))}
+            </div>
+            {dimensionFields.map((field) => (
+              <FieldControl
+                key={String(field.key)}
+                label={field.label}
+                value={project.dimensions[field.key] as number}
+                min={field.min}
+                max={field.max}
+                unit={field.unit}
+                onChange={(value) => updateGroup(field.group, field.key, clamp(value, field.min, field.max))}
+              />
+            ))}
+          </>
+        )}
+
+        {tab === 'skull' && skullFields.map((field) => (
+          <FieldControl
+            key={String(field.key)}
+            label={field.label}
+            value={project.skull[field.key] as number}
             min={field.min}
             max={field.max}
-            step={1}
-            value={value}
-            onFocus={onFocus}
-            onChange={(event) => onChange(Number(event.target.value))}
+            unit={field.unit}
+            onChange={(value) => updateGroup(field.group, field.key, clamp(value, field.min, field.max))}
           />
-          <small>mm</small>
-        </span>
-      </label>
-      <input
-        type="range"
-        min={field.min}
-        max={field.max}
-        step={1}
-        value={value}
-        onFocus={onFocus}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-    </div>
+        ))}
+
+        {tab === 'face' && faceFields.map((field) => (
+          <FieldControl
+            key={`${field.part}.${String(field.key)}`}
+            label={field.label}
+            value={project.face[field.part][field.key as keyof FaceLandmarks[typeof field.part]] as number}
+            min={field.min}
+            max={field.max}
+            unit={field.unit}
+            onChange={(value) => updateFace(field.part, field.key, clamp(value, field.min, field.max))}
+          />
+        ))}
+
+        {tab === 'core' && (
+          <>
+            <div className="toggle-row">
+              {(['wire', 'core', 'finished'] as ViewMode[]).map((mode) => (
+                <button key={mode} type="button" className={project.display.mode === mode ? 'active' : ''} onClick={() => setProject((current) => ({ ...current, display: { ...current.display, mode } }))}>
+                  {mode === 'wire' ? 'ワイヤー' : mode === 'core' ? '芯表示' : '完成予想'}
+                </button>
+              ))}
+            </div>
+            <label className="check-row"><input type="checkbox" checked={project.display.mirrored} onChange={(event) => setProject((current) => ({ ...current, display: { ...current.display, mirrored: event.target.checked } }))} />左右反転</label>
+            <label className="check-row"><input type="checkbox" checked={project.display.translucent} onChange={(event) => setProject((current) => ({ ...current, display: { ...current.display, translucent: event.target.checked } }))} />半透明表示</label>
+            <label className="check-row"><input type="checkbox" checked={project.core.guideLines} onChange={(event) => setProject((current) => ({ ...current, core: { ...current.core, guideLines: event.target.checked } }))} />芯ガイド線</label>
+            {coreFields.map((field) => (
+              <FieldControl
+                key={String(field.key)}
+                label={field.label}
+                value={project.core[field.key] as number}
+                min={field.min}
+                max={field.max}
+                unit={field.unit}
+                onChange={(value) => updateGroup(field.group, field.key, clamp(value, field.min, field.max))}
+              />
+            ))}
+          </>
+        )}
+
+        {tab === 'print' && (
+          <>
+            <label className="check-row"><input type="checkbox" checked={project.print.showGuides} onChange={(event) => updatePrint('showGuides', event.target.checked)} />ガイド線あり</label>
+            <label className="check-row"><input type="checkbox" checked={project.print.a4Split} onChange={(event) => updatePrint('a4Split', event.target.checked)} />A4分割印刷</label>
+            <FieldControl label="印刷倍率" value={project.print.scale} min={80} max={120} unit="%" onChange={(value) => updatePrint('scale', value)} />
+            <button className="primary-action" type="button" onClick={() => setScreen('output')}>テンプレートを確認</button>
+            <button className="secondary-action" type="button" onClick={() => window.print()}>原寸印刷</button>
+          </>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function TemplatePair({ project }: { project: HeadProject }) {
+  const inset = project.core.coreInset;
+  return (
+    <svg className="template-sheet" width="297mm" height="210mm" viewBox="0 0 297 210" role="img" aria-label="正面と側面の芯テンプレート">
+      <rect className="sheet-bg" width="297" height="210" />
+      <g transform="translate(8 12)">
+        <text className="sheet-heading" x="0" y="-4">正面テンプレート</text>
+        <path className="cut-line" d={frontOutline(project, inset)} />
+        <GuideLines project={project} variant="front" />
+      </g>
+      <g transform="translate(-130 12)">
+        <text className="sheet-heading" x="278" y="-4">側面テンプレート</text>
+        <path className="cut-line" d={sideOutline(project, inset)} />
+        <GuideLines project={project} variant="side" />
+      </g>
+      <ScaleBox />
+      <text className="sheet-note" x="10" y="204">A4横 / 100% / 自動縮小なし / 単位:mm</text>
+    </svg>
+  );
+}
+
+function CrossCoreSheet({ project }: { project: HeadProject }) {
+  const slit = project.core.materialThickness + project.core.slitClearance;
+  const depth = project.dimensions.totalHeight * project.core.slitDepthRatio;
+  const frontX = 78 - slit / 2;
+  const sideX = 205 - slit / 2;
+  return (
+    <svg className="template-sheet" width="297mm" height="210mm" viewBox="0 0 297 210" role="img" aria-label="十字芯テンプレート">
+      <rect className="sheet-bg" width="297" height="210" />
+      <g transform="translate(8 12)">
+        <text className="sheet-heading" x="0" y="-4">正面芯</text>
+        <path className="cut-line" d={frontOutline(project, project.core.coreInset)} />
+        <rect className="slit" x={frontX} y="12" width={slit} height={depth} />
+        <text className="slit-label" x={frontX + slit + 2} y={14 + depth}>上から差し込み</text>
+        <GuideLines project={project} variant="front" />
+      </g>
+      <g transform="translate(-130 12)">
+        <text className="sheet-heading" x="278" y="-4">側面芯</text>
+        <path className="cut-line" d={sideOutline(project, project.core.coreInset)} />
+        <rect className="slit" x={sideX} y={12 + project.dimensions.totalHeight - depth} width={slit} height={depth} />
+        <text className="slit-label" x={sideX + slit + 2} y={12 + project.dimensions.totalHeight - depth + 5}>下から差し込み</text>
+        <GuideLines project={project} variant="side" />
+      </g>
+      <ScaleBox />
+      <text className="sheet-note" x="10" y="204">スリット幅: {n(slit)}mm / 印刷後に厚紙へ貼り付け</text>
+    </svg>
+  );
+}
+
+function FinishedSheet({ project }: { project: HeadProject }) {
+  return (
+    <svg className="template-sheet" width="297mm" height="210mm" viewBox="0 0 297 210" role="img" aria-label="完成予想確認">
+      <rect className="sheet-bg" width="297" height="210" />
+      <g transform="translate(8 12)">
+        <text className="sheet-heading" x="0" y="-4">完成予想</text>
+        <path className="shape finished" d={frontOutline(project, 0)} />
+        <path className="shape core" d={frontOutline(project, project.core.coreInset)} />
+      </g>
+      <g transform="translate(-130 12)">
+        <path className="shape finished" d={sideOutline(project, 0)} />
+        <path className="shape core" d={sideOutline(project, project.core.coreInset)} />
+      </g>
+      <ScaleBox />
+    </svg>
+  );
+}
+
+function ScaleBox() {
+  return (
+    <g className="scale-box">
+      <rect x="238" y="148" width="50" height="50" />
+      <line x1="238" y1="173" x2="288" y2="173" />
+      <line x1="263" y1="148" x2="263" y2="198" />
+      <text x="263" y="144">50mm検尺枠</text>
+    </g>
+  );
+}
+
+function OutputView({ project, setScreen }: { project: HeadProject; setScreen: (screen: AppScreen) => void }) {
+  const [mode, setMode] = useState<OutputMode>('templates');
+  return (
+    <main className="output-screen">
+      <header className="top-bar">
+        <button type="button" onClick={() => setScreen('work')}>編集へ戻る</button>
+        <div className="output-tabs">
+          <button type="button" className={mode === 'finished' ? 'active' : ''} onClick={() => setMode('finished')}>完成確認</button>
+          <button type="button" className={mode === 'templates' ? 'active' : ''} onClick={() => setMode('templates')}>芯テンプレート</button>
+          <button type="button" className={mode === 'crossCore' ? 'active' : ''} onClick={() => setMode('crossCore')}>十字芯</button>
+        </div>
+        <button type="button" onClick={() => window.print()}>印刷</button>
+      </header>
+      <section className="sheet-preview">
+        {mode === 'finished' && <FinishedSheet project={project} />}
+        {mode === 'templates' && <TemplatePair project={project} />}
+        {mode === 'crossCore' && <CrossCoreSheet project={project} />}
+      </section>
+    </main>
+  );
+}
+
+function Home({ setScreen, newProject }: { setScreen: (screen: AppScreen) => void; newProject: () => void }) {
+  return (
+    <main className="home-screen">
+      <section className="home-panel">
+        <p>BJD Head Draft</p>
+        <h1>ドールヘッド芯設計</h1>
+        <div className="home-actions">
+          <button type="button" onClick={() => { newProject(); setScreen('work'); }}>新規ヘッド作成</button>
+          <button type="button" onClick={() => setScreen('work')}>保存データ</button>
+          <button type="button" onClick={() => setScreen('work')}>テンプレート</button>
+          <button type="button" onClick={() => setScreen('output')}>印刷</button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function WorkScreen({ project, setProject, setScreen }: { project: HeadProject; setProject: React.Dispatch<React.SetStateAction<HeadProject>>; setScreen: (screen: AppScreen) => void }) {
+  return (
+    <main className="work-screen">
+      <section className="preview-pane">
+        <header className="top-bar">
+          <button type="button" onClick={() => setScreen('home')}>ホーム</button>
+          <div>
+            <p>BJD Head Draft</p>
+            <h1>芯設計</h1>
+          </div>
+          <button type="button" onClick={() => setScreen('output')}>出力</button>
+        </header>
+        <ViewGrid project={project} />
+      </section>
+      <Controls project={project} setProject={setProject} setScreen={setScreen} />
+    </main>
   );
 }
 
 function App() {
-  const [dimensions, setDimensions] = useState<HeadDimensions>(loadInitialDimensions);
-  const [panelTab, setPanelTab] = useState<PanelTab>('head');
-  const [view, setView] = useState<ViewMode>('front');
-  const [zoom, setZoom] = useState(1);
-  const [activeKey, setActiveKey] = useState<keyof HeadDimensions | null>(null);
+  const [screen, setScreen] = useState<AppScreen>('work');
+  const [project, setProject] = useState<HeadProject>(loadProject);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(dimensions));
-  }, [dimensions]);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+  }, [project]);
 
-  const visibleFields = useMemo(
-    () => dimensionFields.filter((field) => field.tab === panelTab),
-    [panelTab],
-  );
-
-  function setDimension(key: keyof HeadDimensions, value: number) {
-    const field = dimensionFields.find((item) => item.key === key);
-    const safeValue = field ? clamp(value, field.min, field.max) : value;
-    setActiveKey(key);
-    setDimensions((current) => updateDimensionValue(current, key, safeValue));
-  }
-
-  function reset() {
-    setDimensions(defaultDimensions);
-    setActiveKey(null);
+  function newProject() {
+    setProject(defaultProject);
     window.localStorage.removeItem(STORAGE_KEY);
   }
 
-  function printPdf() {
-    window.print();
-  }
-
-  return (
-    <main className="app-shell">
-      <section className="preview-area" aria-label="編集用プレビュー">
-        <header className="app-header">
-          <div>
-            <p>BJD Head Draft</p>
-            <h1>実寸正投影図</h1>
-          </div>
-          <div className="zoom-actions">
-            <button type="button" aria-label="縮小" onClick={() => setZoom((value) => clamp(Number((value - 0.1).toFixed(1)), 0.7, 1.7))}>-</button>
-            <output>{Math.round(zoom * 100)}%</output>
-            <button type="button" aria-label="拡大" onClick={() => setZoom((value) => clamp(Number((value + 0.1).toFixed(1)), 0.7, 1.7))}>+</button>
-          </div>
-        </header>
-
-        <div className="view-tabs" role="tablist" aria-label="表示切り替え">
-          <button type="button" className={view === 'front' ? 'active' : ''} onClick={() => setView('front')}>正面</button>
-          <button type="button" className={view === 'side' ? 'active' : ''} onClick={() => setView('side')}>横</button>
-          <button type="button" className={view === 'top' ? 'active' : ''} onClick={() => setView('top')}>上面</button>
-        </div>
-
-        <EditablePreview dim={dimensions} view={view} zoom={zoom} activeKey={activeKey} />
-      </section>
-
-      <section className="controls" aria-label="設定パネル">
-        <div className="panel-tabs" role="tablist" aria-label="設定カテゴリ">
-          {(Object.keys(tabLabels) as PanelTab[]).map((tab) => (
-            <button key={tab} type="button" className={panelTab === tab ? 'active' : ''} onClick={() => setPanelTab(tab)}>
-              {tabLabels[tab]}
-            </button>
-          ))}
-        </div>
-
-        {panelTab === 'print' ? (
-          <div className="print-panel">
-            <p>A4横、100%倍率、自動縮小なしで印刷してください。50mm検尺枠で出力後の寸法を確認できます。</p>
-            <button type="button" onClick={printPdf}>PDF出力</button>
-            <button type="button" onClick={reset}>リセット</button>
-          </div>
-        ) : (
-          <div className="control-list">
-            {visibleFields.map((field) => (
-              <DimensionControl
-                key={field.key}
-                field={field}
-                value={dimensions[field.key]}
-                onFocus={() => setActiveKey(field.key)}
-                onChange={(value) => setDimension(field.key, value)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <PrintableSheet dim={dimensions} activeKey={activeKey} />
-    </main>
-  );
+  if (screen === 'home') return <Home setScreen={setScreen} newProject={newProject} />;
+  if (screen === 'output') return <OutputView project={project} setScreen={setScreen} />;
+  return <WorkScreen project={project} setProject={setProject} setScreen={setScreen} />;
 }
 
 createRoot(document.getElementById('root')!).render(
