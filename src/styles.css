@@ -90,6 +90,10 @@ body {
   background: #eef1f3;
 }
 
+.panel-tabs.single-tab {
+  grid-template-columns: 1fr;
+}
+
 .view-tabs button,
 .panel-tabs button,
 .mini-segment button,
@@ -122,36 +126,51 @@ body {
   background: #fff;
 }
 
-.warp-stage {
+.reference-stage {
   position: relative;
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
+  padding: clamp(14px, 3vmin, 30px);
   background: #fff;
 }
 
-.warp-canvas {
+.reference-image {
   display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-}
-
-.anchor-svg {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
+  object-fit: contain;
+  object-position: center center;
 }
 
-.anchor-overlay circle {
-  fill: #fff;
-  stroke: #d40000;
-  stroke-width: 1.1;
-  vector-effect: non-scaling-stroke;
+.reference-center-line,
+.reference-eye-line {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.34;
+}
+
+.reference-center-line {
+  top: clamp(14px, 3vmin, 30px);
+  bottom: clamp(14px, 3vmin, 30px);
+  left: 50%;
+  border-left: 1px dashed #666;
+}
+
+.reference-eye-line {
+  top: 55%;
+  left: clamp(14px, 3vmin, 30px);
+  right: clamp(14px, 3vmin, 30px);
+  border-top: 1px dashed #777;
+}
+
+.reference-center-label {
+  position: absolute;
+  top: clamp(18px, 4vmin, 36px);
+  left: calc(50% + 8px);
+  color: #333;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.72;
 }
 
 .controls {
