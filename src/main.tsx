@@ -9,8 +9,8 @@ type HeadProject = {
 };
 
 const STORAGE_KEY = 'bjd-reference-display:v1';
-const FRONT_PHOTO = './reference/front.jpg';
-const SIDE_PHOTO = './reference/side.jpg';
+const FRONT_PHOTO = './reference/front-white-20260731.jpg';
+const SIDE_PHOTO = './reference/side-white-20260731.jpg';
 
 const defaultProject: HeadProject = {
   outputHeightMm: 60,
