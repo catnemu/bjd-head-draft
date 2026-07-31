@@ -91,16 +91,16 @@ const defaultProject: HeadProject = {
 };
 
 const fields: FieldConfig[] = [
-  { key: 'headHeight', label: '頭頂から顎下', min: 120, max: 190, tab: 'head' },
-  { key: 'headWidth', label: '頭幅', min: 62, max: 112, tab: 'head' },
+  { key: 'headHeight', label: '頭頂から顎下', min: 150, max: 190, tab: 'head' },
+  { key: 'headWidth', label: '頭幅', min: 76, max: 100, tab: 'head' },
   { key: 'headDepth', label: '頭奥行', min: 74, max: 135, tab: 'head' },
   { key: 'occiputRoundness', label: '後頭部の丸み', min: -12, max: 18, tab: 'head' },
   { key: 'foreheadTilt', label: '額の傾き', min: -12, max: 12, tab: 'head' },
-  { key: 'templeWidth', label: 'こめかみ', min: -12, max: 12, tab: 'head' },
-  { key: 'cheekboneWidth', label: '頬骨', min: -12, max: 14, tab: 'face' },
-  { key: 'cheekFullness', label: '頬の膨らみ', min: -10, max: 14, tab: 'face' },
-  { key: 'jawWidth', label: '顎幅', min: -14, max: 14, tab: 'face' },
-  { key: 'jawLength', label: '顎長', min: -12, max: 16, tab: 'face' },
+  { key: 'templeWidth', label: 'こめかみ', min: -6, max: 6, tab: 'head' },
+  { key: 'cheekboneWidth', label: '頬骨', min: -6, max: 6, tab: 'face' },
+  { key: 'cheekFullness', label: '頬の膨らみ', min: -5, max: 7, tab: 'face' },
+  { key: 'jawWidth', label: '顎幅', min: -6, max: 6, tab: 'face' },
+  { key: 'jawLength', label: '顎長', min: -5, max: 7, tab: 'face' },
   { key: 'eyeHeight', label: '目の高さ', min: -20, max: 20, tab: 'eye' },
   { key: 'eyeGap', label: '目の間隔', min: 8, max: 34, tab: 'eye' },
   { key: 'noseHeight', label: '鼻の高さ', min: -12, max: 14, tab: 'face' },
@@ -160,30 +160,47 @@ function frontPoint(anchor: HeadAnchors, x: number, y: number) {
 }
 
 function frontHeadPath(anchor: HeadAnchors) {
-  const p = (x: number, y: number) => frontPoint(anchor, x, y);
-  const top = p(90, 16);
-  const temple = p(47 - anchor.templeWidth, 80);
-  const cheekbone = p(42 - anchor.cheekboneWidth, 118);
-  const cheek = p(51 - anchor.cheekFullness, 145);
-  const jaw = p(66 - anchor.jawWidth, 174 + anchor.jawLength);
-  const chin = p(90, 190 + anchor.jawLength);
-  const rTemple = p(180 - temple.x, 80);
-  const rCheekbone = p(180 - cheekbone.x, 118);
-  const rCheek = p(180 - cheek.x, 145);
-  const rJaw = p(180 - jaw.x, 174 + anchor.jawLength);
+  const scaleX = sx(anchor);
+  const scaleY = sy(anchor);
+  const px = (x: number) => 90 + (x - 90) * scaleX;
+  const py = (y: number) => 18 + (y - 18) * scaleY;
+  const safeTemple = clamp(anchor.templeWidth, -6, 6);
+  const safeCheekbone = clamp(anchor.cheekboneWidth, -6, 6);
+  const safeCheek = clamp(anchor.cheekFullness, -5, 7);
+  const safeJaw = clamp(anchor.jawWidth, -6, 6);
+  const safeJawLength = clamp(anchor.jawLength, -5, 7);
+
+  // Fixed BJD child-face outline. Slider values only nudge these stable anchors.
+  const top = { x: px(90), y: py(18) };
+  const upperHead = { x: px(55), y: py(35) };
+  const temple = { x: px(50 - safeTemple), y: py(80) };
+  const cheekbone = { x: px(45 - safeCheekbone), y: py(116) };
+  const cheek = { x: px(52 - safeCheek), y: py(144) };
+  const jaw = { x: px(65 - safeJaw), y: py(168 + safeJawLength * 0.45) };
+  const chinSide = { x: px(75 - safeJaw * 0.25), y: py(184 + safeJawLength) };
+  const chin = { x: px(90), y: py(190 + safeJawLength) };
+  const mirror = (point: { x: number; y: number }) => ({ x: 180 - point.x, y: point.y });
+  const rUpperHead = mirror(upperHead);
+  const rTemple = mirror(temple);
+  const rCheekbone = mirror(cheekbone);
+  const rCheek = mirror(cheek);
+  const rJaw = mirror(jaw);
+  const rChinSide = mirror(chinSide);
 
   return [
     `M ${top.x} ${top.y}`,
-    `C ${62 * sx(anchor)} ${18 * sy(anchor)}, ${48 * sx(anchor)} ${43 * sy(anchor)}, ${temple.x} ${temple.y}`,
-    `C ${temple.x - 1} ${96 * sy(anchor)}, ${cheekbone.x} ${106 * sy(anchor)}, ${cheekbone.x} ${cheekbone.y}`,
-    `C ${cheekbone.x + 1} ${132 * sy(anchor)}, ${cheek.x} ${137 * sy(anchor)}, ${cheek.x} ${cheek.y}`,
-    `C ${cheek.x + 4} ${162 * sy(anchor)}, ${jaw.x} ${166 * sy(anchor)}, ${jaw.x} ${jaw.y}`,
-    `C ${70 * sx(anchor)} ${192 * sy(anchor)}, ${80 * sx(anchor)} ${(197 + anchor.jawLength) * sy(anchor)}, ${chin.x} ${chin.y}`,
-    `C ${100 * sx(anchor)} ${(197 + anchor.jawLength) * sy(anchor)}, ${110 * sx(anchor)} ${192 * sy(anchor)}, ${rJaw.x} ${rJaw.y}`,
-    `C ${rJaw.x} ${166 * sy(anchor)}, ${rCheek.x - 4} ${162 * sy(anchor)}, ${rCheek.x} ${rCheek.y}`,
-    `C ${rCheek.x} ${137 * sy(anchor)}, ${rCheekbone.x - 1} ${132 * sy(anchor)}, ${rCheekbone.x} ${rCheekbone.y}`,
-    `C ${rCheekbone.x} ${106 * sy(anchor)}, ${rTemple.x + 1} ${96 * sy(anchor)}, ${rTemple.x} ${rTemple.y}`,
-    `C ${132 * sx(anchor)} ${43 * sy(anchor)}, ${118 * sx(anchor)} ${18 * sy(anchor)}, ${top.x} ${top.y}`,
+    `C ${top.x - 18 * scaleX} ${py(18)}, ${upperHead.x - 12 * scaleX} ${py(21)}, ${upperHead.x} ${upperHead.y}`,
+    `C ${px(43)} ${py(52)}, ${temple.x} ${py(65)}, ${temple.x} ${temple.y}`,
+    `C ${temple.x} ${py(96)}, ${cheekbone.x} ${py(104)}, ${cheekbone.x} ${cheekbone.y}`,
+    `C ${cheekbone.x + 1 * scaleX} ${py(130)}, ${cheek.x} ${py(137)}, ${cheek.x} ${cheek.y}`,
+    `C ${cheek.x + 3 * scaleX} ${py(158)}, ${jaw.x} ${py(160)}, ${jaw.x} ${jaw.y}`,
+    `C ${jaw.x} ${py(176)}, ${chinSide.x} ${chinSide.y}, ${chin.x} ${chin.y}`,
+    `C ${rChinSide.x} ${rChinSide.y}, ${rJaw.x} ${py(176)}, ${rJaw.x} ${rJaw.y}`,
+    `C ${rJaw.x} ${py(160)}, ${rCheek.x - 3 * scaleX} ${py(158)}, ${rCheek.x} ${rCheek.y}`,
+    `C ${rCheek.x} ${py(137)}, ${rCheekbone.x - 1 * scaleX} ${py(130)}, ${rCheekbone.x} ${rCheekbone.y}`,
+    `C ${rCheekbone.x} ${py(104)}, ${rTemple.x} ${py(96)}, ${rTemple.x} ${rTemple.y}`,
+    `C ${rTemple.x} ${py(65)}, ${px(137)} ${py(52)}, ${rUpperHead.x} ${rUpperHead.y}`,
+    `C ${rUpperHead.x + 12 * scaleX} ${py(21)}, ${top.x + 18 * scaleX} ${py(18)}, ${top.x} ${top.y}`,
     'Z',
   ].join(' ');
 }
